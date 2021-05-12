@@ -2,16 +2,17 @@
 // position of our own aircraft how do we implement the attraction repulsion 
 // swarm behaviour for a copter
 
-/* given this:
+// given this:
 
- struct Pos {
+ typedef struct {
      double x;
      double y;
      double z;
- }
- Pos pos[] = new Pos[50];
- Pos ownPos = new Pos;
+ } Pos;
+
+ Pos otherPos[50];
+ Pos ownPos;
  
- implement the swarm behaviour
-*/
+// implement the swarm behaviour
+
 
