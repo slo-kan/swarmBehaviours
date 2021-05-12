@@ -10,7 +10,8 @@
      double z;
  } Pos;
 
- Pos otherPos[50];
+ int droneCount = 50
+ Pos otherPos[droneCount];
  Pos ownPos;
  Pos perlimiter;
  
@@ -19,7 +20,7 @@
 Pos attract()
 {
     Pos targetPos = {0,0,0};
-    for(int idx=0; idx<50; ++idx)
+    for(int idx=0; idx<droneCount; ++idx)
     {
       targetPos.x += otherPos[idx].x-ownPos.x;
       targetPos.y += otherPos[idx].y-ownPos.y;
@@ -32,7 +33,7 @@ Pos repulse()
 {
     Pos targetPos = {0,0,0};
     Pos offsetPos = {0,0,0};
-    for(int idx=0; idx<50; ++idx)
+    for(int idx=0; idx<droneCount; ++idx)
     {
       offsetPos.x = otherPos[idx].x-ownPos.x;
       if(offsetPos.x<perlimiter.x)
@@ -46,3 +47,6 @@ Pos repulse()
     }
     return targetPos;
 }
+
+
+// this is most likely far from correct please feel free to fix or override this - this is just to give you an idea of how this code could look like
