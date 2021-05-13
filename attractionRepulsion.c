@@ -1,8 +1,6 @@
 // assume we have a position array of 50 positions (of other aircrafts) and the 
 // position of our own aircraft how do we implement the attraction repulsion 
-// swarm behaviour for a copter
-
-// given this:
+// swarm behaviour for a copter - given this data, structures and parameters:
  
  // structure for potentionally cleaner code
  typedef struct {
@@ -84,3 +82,9 @@ void updatePos()
 // this code - this is just a quickly coded template to give you an idea of
 // how this code could look like - please also feel free to make better use
 // of the defined structure #OperatorOverloading
+
+// side note instead of having the drones being attracted to and repulsed from 
+// each other we could have waypoints as (additional) attraction points and 
+// the drones serve (only) a repulsion purpose
+// we should ask the prof what is the desired behaviour here :)
+
