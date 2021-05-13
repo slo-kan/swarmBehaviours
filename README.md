@@ -5,5 +5,5 @@ In the helpful_links.txt we going to post links to websites, videos or documents
 This behaviours will all be implemented assuming that we have an interface to receive the needed data.
 This will help migrating the code later on to the actual Software Project.
 
-To view the demo coded in Java download the following IDE and load the project: 
+To view the demo coded in Java download the following IDE and load the project: <br>
 https://processing.org/download/
