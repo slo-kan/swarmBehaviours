@@ -3,6 +3,7 @@ import java.util.ArrayList;
 ArrayList<PVector> attractors = new ArrayList<PVector>();
 ArrayList<Particle> particles = new ArrayList<Particle>();
 float perlimiter = 8;
+int ticks = 0;
 
 void setup() {
   size(2400, 1400);
@@ -14,10 +15,23 @@ void setup() {
      attractors.add(new PVector(random(width), random(height)));
 }
 
+void newAttractors(){
+  for(int it = 0; it < 4; ++it){
+     attractors.remove(0);
+     attractors.add(new PVector(random(width), random(height)));
+  }
+}
+
 //void mousePressed() { attractors.add(new PVector(mouseX, mouseY)); }
 
 void draw() {
   background(51);
+  
+  if(ticks==28)
+  {
+    ticks = 0;
+    newAttractors();
+  }
 
   stroke(0, 255, 0);
   for (PVector attractor:this.attractors)
@@ -37,4 +51,5 @@ void draw() {
     particle.update();
     particle.show();
   }
+  ++ticks;
 }
