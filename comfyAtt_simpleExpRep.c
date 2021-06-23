@@ -153,15 +153,15 @@ static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   msg.repulsion_d = d;
   msg.repulsion = true;
 
-  float strength = (GRAVITY * multiplier) * exp((-1*d*d)/(2*REGION_SIZE));
+  float strength = (GRAVITY * multiplier) * exp((-1*d*d)/(2*REGION_SIZE*REGION_SIZE));
   msg.repulsion_strength = strength;
 
   force.x = force.x * strength;
   force.y = force.y * strength;
   msg.repulsion_force = force;
 
-  acc->x -= force.x;
-  acc->y -= force.y;
+  acc->x += force.x;
+  acc->y += force.y;
 }
 
 /*
