@@ -43,23 +43,24 @@ class Particle {
     if(this.prev.size()>100) this.prev.remove(0);
   }
 
-  void attracted(PVector target, float perlimiter) {
+
+  void primitive_attraction(PVector target, float perlimiter, int multiplier) {
     // PVector dir = target - pos
-    PVector force = PVector.sub(target, pos);
+    PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     d = constrain(d, 1, 25);
     if(d > perlimiter)
     {
-      float strength = G / (d * d);
+      float strength = (G*multiplier) / (d * d);
       force.setMag(strength); 
       acc.add(force);
     }
   }
   
-  void repulsed(PVector target, float perlimiter, int multiplier)
+  void primitive_repulsion(PVector target, float perlimiter, int multiplier)
   {
     // PVector dir = target - pos
-    PVector force = PVector.sub(target, pos);
+    PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     d = constrain(d, 1, 25);
     if(d<perlimiter)
@@ -68,5 +69,44 @@ class Particle {
       force.setMag(strength);
       acc.sub(force);
     }
+  }
+  
+  void linear_attraction(PVector target, int multiplier) {
+    // PVector dir = target - pos
+    PVector force = PVector.sub(target, this.pos);
+    float d = force.mag();
+    float strength = G*multiplier; 
+    force.setMag(strength); 
+    acc.add(force);
+  }
+  
+  void complexExponential_repulsion(PVector target, float perlimiter, int a, int b)
+  {
+    // PVector dir = target - pos
+    PVector force = PVector.sub(target, this.pos);
+    float d = force.mag();
+    float c = (perlimiter*perlimiter) * (float)Math.log(b/a);
+    float strength = (G*b) * (float)Math.exp(-(d*d)/c);
+    force.setMag(strength);
+    acc.sub(force);
+  }
+  
+  void comfy_attraction(PVector target, float perlimiter, int multiplier) {
+    // PVector dir = target - pos
+    PVector force = PVector.sub(target, this.pos);
+    float d = force.mag();
+    float strength = (G*multiplier) * (d-perlimiter)/max(d,0.01f); 
+    force.setMag(strength); 
+    acc.add(force);
+  }
+  
+  void simpleExponential_repulsion(PVector target, float perlimiter, int multiplier)
+  {
+    // PVector dir = target - pos
+    PVector force = PVector.sub(target, this.pos);
+    float d = force.mag();
+    float strength = (G*multiplier) * (float)Math.exp(-(d*d)/(2*perlimiter*perlimiter));
+    force.setMag(strength);
+    acc.sub(force);
   }
 };
