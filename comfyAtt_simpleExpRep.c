@@ -48,23 +48,24 @@
 #define FLIGHT_HEIGHT 47.0f
 #endif
 
-// k parameter
+// g parameter -> ka = g; kb = g * m
 #ifndef GRAVITY
 #define GRAVITY 1.985f
 #endif
 
 // d parameter
 #ifndef COMFY_DIST
-#define COMFY_DIST 2.25f
+#define COMFY_DIST 5.25f
 #endif
 
 // r parameter
 #ifndef REGION_SIZE
-#define REGION_SIZE 1.5f
+#define REGION_SIZE 2.5f
 #endif
 
+// m parameter -> kb = g * m
 #ifndef DRONE_REPULSION_MULTIPLIER
-#define DRONE_REPULSION_MULTIPLIER 1
+#define DRONE_REPULSION_MULTIPLIER 2.5f
 #endif
 
 #ifndef FOLLOW_AC_ID
@@ -116,7 +117,8 @@ void swarm_init(void) {
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATTREP, send_attract_and_repulse_info);
 }
 
-static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc)
+//attraction_force = (ka*(||distance||-d)/max(||distance||,0.01))*distance
+static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter)
 {
   struct EnuCoor_f force = {
   	pos_ac->x - own_pos->x,
@@ -129,7 +131,7 @@ static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   msg.attraction_d = d;
   msg.attraction = true;
 
-  float strength = GRAVITY * (d - COMFY_DIST);
+  float strength = GRAVITY * (d - perlimiter)/fmax(d,0.01f);
   msg.attraction_strength = strength;
 
   force.x = force.x * strength;
@@ -140,7 +142,8 @@ static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y += force.y;
 }
 
-static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, uint8_t multiplier)
+//repulsion_force = (kb*exp(-||distance||²/2r²))*distance
+static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
 {
   struct EnuCoor_f force = {
   	pos_ac->x - own_pos->x,
@@ -153,15 +156,44 @@ static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   msg.repulsion_d = d;
   msg.repulsion = true;
 
-  float strength = (GRAVITY * multiplier) * exp((-1*d*d)/(2*REGION_SIZE*REGION_SIZE));
+  float strength = (GRAVITY * multiplier) * expf(-(d*d)/(2 * perlimiter * perlimiter));
   msg.repulsion_strength = strength;
 
   force.x = force.x * strength;
   force.y = force.y * strength;
   msg.repulsion_force = force;
 
-  acc->x += force.x;
-  acc->y += force.y;
+  acc->x -= force.x;
+  acc->y -= force.y;
+}
+
+//total_force = (ka*(||distance||-d)/max(||distance||,0.01) - kb*exp(-||distance||²/2r²))*distance
+static void attRep(struct EnuCoor_f* own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float comfy_dist, float radius, uint8_t multiplier)
+{
+    struct EnuCoor_f force = {
+            pos_ac->x - own_pos->x,
+            pos_ac->y - own_pos->y,
+            0.0f
+    };
+    msg.repulsion_force = force;
+
+    float d = sqrtf(force.x * force.x + force.y * force.y);
+    msg.repulsion_d = d;
+    msg.attraction_d = d;
+    msg.repulsion = true;
+    msg.attraction = true;
+
+    float strength_att = GRAVITY * (d - comfy_dist) / fmax(d, 0.01f);
+    float strength_rep = (GRAVITY * multiplier) * expf(-(d*d)/(2 * radius * radius));
+    msg.attraction_strength = strength_att;
+    msg.repulsion_strength = strength_rep;
+
+    force.x = force.x * (strength_att - strength_rep);
+    force.y = force.y * (strength_att - strength_rep);
+    msg.repulsion_force = force;
+
+    acc->x += force.x;
+    acc->y += force.y;
 }
 
 /*
@@ -185,8 +217,9 @@ void swarm_follow_wp(void)
     {
       msg.target_pos = *ac_pos;
       msg.target_ac_id = ac_id;
-      attract(own_pos,ac_pos,&acc);
-      repulse(own_pos,ac_pos,&acc,DRONE_REPULSION_MULTIPLIER);
+      attract(own_pos,ac_pos,&acc, COMFY_DIST);
+      repulse(own_pos,ac_pos,&acc, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
+      //totalForce(own_pos, ac_pos, &acc, COMFY_DIST, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
     }
     else
     {

@@ -3,9 +3,9 @@ import sys, getopt, math
 
 # standard constant values
 GRAVITY = 1.985
-MULTIPLIER = 3.0
-COMFY_DISTANCE = 4.0
-PERLIMITER = 2.0
+MULTIPLIER = 2.5
+COMFY_DISTANCE = 5.25
+PERLIMITER = 2.5
 
 
 def linAtt_compExpRep(ka,kb,r,x):
@@ -17,10 +17,10 @@ def linAtt_simExpRep(ka,kb,r,x):
 
 def comfyAtt_compExpRep(ka,kb,r,d,x):
     c = (r*r)/(math.log(kb/ka))
-    return (-x)*((-ka*(abs(x)-d)/max(abs(x),1))-(kb*math.exp(-(x*x)/c)))
+    return (-x)*((-ka*(abs(x)-d)/max(abs(x),0.01))-(kb*math.exp(-(x*x)/c)))
 
 def comfyAtt_simExpRep(ka,kb,r,d,x):
-    return (-x)*((-ka*(abs(x)-d)/max(abs(x),1))-(kb*math.exp(-(x*x)/(2*r*r))))                    
+    return (-x)*((-ka*(abs(x)-d)/max(abs(x),0.01))-(kb*math.exp(-(x*x)/(2*r*r))))                    
                     
 
 # command line argument  

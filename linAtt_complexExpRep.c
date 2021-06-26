@@ -48,16 +48,19 @@
 #define FLIGHT_HEIGHT 47.0f
 #endif
 
+// g parameter -> ka = g; kb = g * m
 #ifndef GRAVITY
-#define GRAVITY 0.3f
+#define GRAVITY 1.985f
 #endif
 
-#ifndef PERLIMITER
-#define PERLIMITER 2.5f
+// r parameter
+#ifndef REGION_SIZE
+#define REGION_SIZE 2.5f
 #endif
 
+// m parameter -> kb = g * m
 #ifndef DRONE_REPULSION_MULTIPLIER
-#define DRONE_REPULSION_MULTIPLIER 1.5f
+#define DRONE_REPULSION_MULTIPLIER 2.5f
 #endif
 
 #ifndef FOLLOW_AC_ID
@@ -109,6 +112,7 @@ void swarm_init(void) {
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATTREP, send_attract_and_repulse_info);
 }
 
+//attraction_force = ka*distance
 static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc)
 {
   struct EnuCoor_f force = {
@@ -133,6 +137,7 @@ static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y += force.y;
 }
 
+//repulsion_force = (kb*exp(-||distance||²/c))*distance
 static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
 {
   struct EnuCoor_f force = {
@@ -140,42 +145,54 @@ static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   	pos_ac->y - own_pos->y,
   	0.0f
   };
-  float c = (perlimiter*perlimiter)/logf(multiplier);
-
   msg.repulsion_force = force;
 
   float d = sqrtf(force.x*force.x + force.y*force.y);
   msg.repulsion_d = d;
   msg.repulsion = true;
 
-  float strength = GRAVITY*multiplier*expf(-(d*d)/c);
+  float c = (perlimiter * perlimiter)/logf(multiplier);
+  float strength = (GRAVITY * multiplier) * expf(-(d*d)/c);
   msg.repulsion_strength = strength;
 
   force.x = force.x * strength;
   force.y = force.y * strength;
   msg.repulsion_force = force;
 
-  acc->x += force.x;
-  acc->y += force.y;
+  acc->x -= force.x;
+  acc->y -= force.y;
 }
-/*
-static void totalForce(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
+
+//total_force = (ka - kb*exp(-||distance||²/c))*distance
+static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
 {
     struct EnuCoor_f force = {
             pos_ac->x - own_pos->x,
             pos_ac->y - own_pos->y,
             0.0f
     };
+    msg.repulsion_force = force;
+
     float d = sqrtf(force.x*force.x + force.y*force.y);
-    float c = (perlimiter*perlimiter)/logf(multiplier);
+    float c = (perlimiter * perlimiter)/logf(multiplier);
+    msg.repulsion_d = d;
+    msg.attraction_d = d;
+    msg.repulsion = true;
+    msg.attraction = true;
+
     float strength_att = GRAVITY;
-    float strength_rep = (GRAVITY*multiplier)*expf(-(d*d)/c);
+    float strength_rep = (GRAVITY * multiplier) * expf(-(d*d)/c);
+    msg.attraction_strength = strength_att;
+    msg.repulsion_strength = strength_rep;
+
     force.x = force.x * (strength_att - strength_rep);
     force.y = force.y * (strength_att - strength_rep);
+    msg.repulsion_force = force;
+
     acc->x += force.x;
     acc->y += force.y;
 }
-*/
+
 /*
  * swarm_follow_wp(void)
  * updates the FOLLOW_WAYPOINT_ID to a fixed offset from the last received location
@@ -197,8 +214,8 @@ void swarm_follow_wp(void)
         msg.target_pos = *ac_pos;
         msg.target_ac_id = ac_id;
         attract(own_pos,ac_pos,&acc);
-        repulse(own_pos,ac_pos,&acc,PERLIMITER,DRONE_REPULSION_MULTIPLIER);
-        //totalForce(own_pos, ac_pos, &acc, PERLIMITER, DRONE_REPULSION_MULTIPLIER);
+        repulse(own_pos,ac_pos,&acc, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
+        //totalForce(own_pos, ac_pos, &acc, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
     }
     else
     {
