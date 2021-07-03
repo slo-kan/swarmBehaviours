@@ -63,6 +63,20 @@
 #define DRONE_REPULSION_MULTIPLIER 2.5f
 #endif
 
+// w parameter -> w < 1
+#ifndef WEIGHT
+#define WEIGHT 0.2f
+#endif
+
+// velocity limit parameter
+#ifndef VELOCITY_LIMIT_X
+#define VELOCITY_LIMIT_X 3.0f
+#endif
+
+#ifndef VELOCITY_LIMIT_Y
+#define VELOCITY_LIMIT_Y 3.0f
+#endif
+
 #ifndef FOLLOW_AC_ID
 #error "Please define FOLLOW_AC_ID"
 #endif
@@ -137,7 +151,7 @@ static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y += force.y;
 }
 
-//repulsion_force = (kb*exp(-||distance||²/c))*distance
+//repulsion_force = (kb*exp(-||distance||Â²/c))*distance
 static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
 {
   struct EnuCoor_f force = {
@@ -163,7 +177,7 @@ static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y -= force.y;
 }
 
-//total_force = (ka - kb*exp(-||distance||²/c))*distance
+//total_force = (ka - kb*exp(-||distance||Â²/c))*distance
 static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
 {
     struct EnuCoor_f force = {
@@ -185,8 +199,8 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
     msg.attraction_strength = strength_att;
     msg.repulsion_strength = strength_rep;
 
-    force.x = force.x * (strength_att - strength_rep);
-    force.y = force.y * (strength_att - strength_rep);
+    force.x = WEIGHT * force.x * (strength_att - strength_rep);
+    force.y = WEIGHT * force.y * (strength_att - strength_rep);
     msg.repulsion_force = force;
 
     acc->x += force.x;
@@ -215,7 +229,7 @@ void swarm_follow_wp(void)
         msg.target_ac_id = ac_id;
         attract(own_pos,ac_pos,&acc);
         repulse(own_pos,ac_pos,&acc, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
-        //totalForce(own_pos, ac_pos, &acc, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
+        //(own_pos, ac_pos, &acc, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
     }
     else
     {
@@ -228,11 +242,15 @@ void swarm_follow_wp(void)
   struct EnuCoor_f* vel = acInfoGetVelocityEnu_f(AC_ID);
   vel->x += acc.x;
   vel->y += acc.y;
+  //vel->x += VELOCITY_LIMIT_X * tanhf(acc.x);
+  //vel->y += VELOCITY_LIMIT_Y * tanhf(acc.y);
   acInfoSetVelocityEnu_f(AC_ID,vel);
 
   struct EnuCoor_i enu = *stateGetPositionEnu_i();
-  enu.x += POS_BFP_OF_REAL(vel->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
-  enu.y += POS_BFP_OF_REAL(vel->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
+  //enu.x += POS_BFP_OF_REAL(vel->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
+  //enu.y += POS_BFP_OF_REAL(vel->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
+  enu.x += POS_BFP_OF_REAL(VELOCITY_LIMIT_X * tanhf(vel->x))+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
+  enu.y += POS_BFP_OF_REAL(VELOCITY_LIMIT_Y * tanhf(vel->y))+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
   enu.z = POS_BFP_OF_REAL(FLIGHT_HEIGHT);
 
   // Move the waypoint
