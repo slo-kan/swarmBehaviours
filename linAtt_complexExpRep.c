@@ -70,11 +70,11 @@
 
 // velocity limit parameter
 #ifndef VELOCITY_LIMIT_X
-#define VELOCITY_LIMIT_X 3.0f
+#define VELOCITY_LIMIT_X 5.0f
 #endif
 
 #ifndef VELOCITY_LIMIT_Y
-#define VELOCITY_LIMIT_Y 3.0f
+#define VELOCITY_LIMIT_Y 5.0f
 #endif
 
 #ifndef FOLLOW_AC_ID
@@ -242,15 +242,13 @@ void swarm_follow_wp(void)
   struct EnuCoor_f* vel = acInfoGetVelocityEnu_f(AC_ID);
   vel->x += acc.x;
   vel->y += acc.y;
-  //vel->x += VELOCITY_LIMIT_X * tanhf(acc.x);
-  //vel->y += VELOCITY_LIMIT_Y * tanhf(acc.y);
+  vel->x = VELOCITY_LIMIT_X * tanhf(vel->x);
+  vel->y = VELOCITY_LIMIT_Y * tanhf(vel->y);
   acInfoSetVelocityEnu_f(AC_ID,vel);
 
   struct EnuCoor_i enu = *stateGetPositionEnu_i();
-  //enu.x += POS_BFP_OF_REAL(vel->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
-  //enu.y += POS_BFP_OF_REAL(vel->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
-  enu.x += POS_BFP_OF_REAL(VELOCITY_LIMIT_X * tanhf(vel->x))+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
-  enu.y += POS_BFP_OF_REAL(VELOCITY_LIMIT_Y * tanhf(vel->y))+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
+  enu.x += POS_BFP_OF_REAL(vel->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
+  enu.y += POS_BFP_OF_REAL(vel->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
   enu.z = POS_BFP_OF_REAL(FLIGHT_HEIGHT);
 
   // Move the waypoint
