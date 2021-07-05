@@ -68,12 +68,16 @@
 #define VELOCITY_LIMIT 5.0f
 #endif
 
-#ifndef FOLLOW_AC_ID
-#error "Please define FOLLOW_AC_ID"
+#ifndef REPELL_POINT_ID
+#error "Please define the REPELL_POINT_ID"
+#endif
+
+#ifndef ATTRACTION_POINT_ID
+#error "Please define the ATTRACTION_POINT_ID"
 #endif
 
 #ifndef SWARM_WAYPOINT_ID
-#error "Please define FOLLOW_WAYPOINT_ID"
+#error "Please define SWARM_WAYPOINT_ID with the ID of FOLLOW wp"
 #endif
 
 struct Message_f {
