@@ -53,9 +53,29 @@
 #define GRAVITY 1.985f
 #endif
 
+// d parameter
+#ifndef COMFY_DIST
+#define COMFY_DIST 5.25f
+#endif
+
 // r parameter
 #ifndef REGION_SIZE
 #define REGION_SIZE 2.5f
+#endif
+
+// m parameter -> ka = g * m
+#ifndef ATTRECTION_MULTIPLIER
+#define ATTRECTION_MULTIPLIER 5.0f
+#endif
+
+// m parameter -> kb = g * m
+#ifndef REPULSION_MULTIPLIER
+#define REPULSION_MULTIPLIER 20.0f
+#endif
+
+// m parameter -> ka = g * m
+#ifndef DRONE_ATTRECTION_MULTIPLIER
+#define DRONE_ATTRECTION_MULTIPLIER 1.0f
 #endif
 
 // m parameter -> kb = g * m
@@ -68,17 +88,26 @@
 #define VELOCITY_LIMIT 5.0f
 #endif
 
-#ifndef REPELL_POINT_ID
-#error "Please define the REPELL_POINT_ID"
+#ifndef SWARM_WAYPOINT_ID
+#error "Please define SWARM_WAYPOINT_ID with the ID of FOLLOW wp"
 #endif
 
 #ifndef ATTRACTION_POINT_ID
 #error "Please define the ATTRACTION_POINT_ID"
 #endif
 
-#ifndef SWARM_WAYPOINT_ID
-#error "Please define SWARM_WAYPOINT_ID with the ID of FOLLOW wp"
+#ifndef REPELL_POINT_ID
+#error "Please define the REPELL_POINT_ID"
 #endif
+
+#ifndef FIRST_SWARM_MEMBER_ID
+#error "Please define the FIRST_SWARM_MEMBER_ID"
+#endif
+
+#ifndef LAST_SWARM_MEMBER_ID
+#error "Please define the LAST_SWARM_MEMBER_ID"
+#endif
+
 
 struct Message_f {
    struct EnuCoor_f own_pos;
@@ -97,6 +126,8 @@ struct Message_f {
 };
 
 static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
+static struct EnuCoor_f att_point = { 0.0f, 0.0f, 0.0f };
+static struct EnuCoor_f rep_point = { 0.0f, 0.0f, 0.0f };
 static struct Message_f msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
 
 /** Get position in local ENU coordinates (float).
@@ -123,7 +154,7 @@ void swarm_init(void) {
 
 //ka = ka * multiplier
 //attraction_force = (ka*(||distance||-d)/max(||distance||,0.01))*distance
-static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
+static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, float multiplier)
 {
   struct EnuCoor_f force = {
   	pos_ac->x - own_pos->x,
@@ -148,7 +179,7 @@ static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
 }
 
 //repulsion_force = (kb*exp(-||distance||²/2r²))*distance
-static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
+static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, float multiplier)
 {
   struct EnuCoor_f force = {
   	pos_ac->x - own_pos->x,
@@ -173,7 +204,7 @@ static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
 }
 
 //total_force = (ka - kb*exp(-||distance||²/c))*distance
-static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
+static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, float att_multiplier, float rep_multiplier)
 {
     struct EnuCoor_f force = {
             pos_ac->x - own_pos->x,
@@ -184,7 +215,7 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
     msg.attraction_force = force;
 
     float d = sqrtf(force.x*force.x + force.y*force.y);
-    float c = (perlimiter * perlimiter)/logf(multiplier);
+    float c = (perlimiter * perlimiter)/logf(rep_multiplier/att_multiplier);
     msg.repulsion_d = d;
     msg.attraction_d = d;
     msg.repulsion = true;
@@ -204,6 +235,28 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
     acc->y += force.y;
 }
 
+static void updateAttRepPoints(struct EnuCoor_f* own_pos)
+{
+    if (((own_pos->x - att_point.x)>-0.5f && (own_pos->x - att_point.x)<0.5f) 
+     && ((own_pos->y - att_point.y)>-0.5f && (own_pos->y - att_point.y)<0.5f)) 
+    {
+        struct EnuCoor_i attPoint = { 0, 0, 0 };
+        struct EnuCoor_i repPoint = { 0, 0, 0 };
+
+        float dir_mult = -1.0f * roundf((float)rand() / (float)(RAND_MAX));
+        if (dir_mult > -0.9999999f) dir_mult = 1.0f;
+
+        attPoint.x = POS_BFP_OF_REAL(dir_mult * 5.0f * ((float)rand() / (float)(RAND_MAX)));
+        attPoint.y = POS_BFP_OF_REAL(dir_mult * 5.0f * ((float)rand() / (float)(RAND_MAX)));
+
+        repPoint.x = POS_BFP_OF_REAL(dir_mult * 15.0f * ((float)rand() / (float)(RAND_MAX)) - att_point.x);
+        repPoint.y = POS_BFP_OF_REAL(dir_mult * 15.0f * ((float)rand() / (float)(RAND_MAX)) - att_point.y);
+
+        waypoint_set_enu_i(ATTRACTION_POINT_ID, &attPoint);
+        waypoint_set_enu_i(REPELL_POINT_ID, &repPoint);
+    }
+}
+
 /*
  * swarm_follow_wp(void)
  * updates the FOLLOW_WAYPOINT_ID to a fixed offset from the last received location
@@ -218,15 +271,14 @@ void swarm_follow_wp(void)
   struct EnuCoor_f *own_pos = stateGetPositionEnu_f();
   msg.own_pos = *own_pos;
 
-  for(uint8_t ac_id=30; ac_id<40; ++ac_id)
+  for(uint8_t ac_id = FIRST_SWARM_MEMBER_ID; ac_id <= LAST_SWARM_MEMBER_ID; ++ac_id)
   {
     struct EnuCoor_f *ac_pos = getPositionEnu_f(ac_id);
     if(ac_pos != NULL && ac_id != AC_ID) {
         msg.target_pos = *ac_pos;
         msg.target_ac_id = ac_id;
-        //attract(own_pos,ac_pos,&acc, 1);
-        //repulse(own_pos,ac_pos,&acc, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
-        attRep(own_pos, ac_pos, &acc, REGION_SIZE, DRONE_REPULSION_MULTIPLIER);
+        
+        attRep(own_pos, ac_pos, &acc, REGION_SIZE, DRONE_ATTRECTION_MULTIPLIER, DRONE_REPULSION_MULTIPLIER);
     }
     else
     {
@@ -235,6 +287,14 @@ void swarm_follow_wp(void)
       msg.repulsion = false;
     }
   }
+
+  att_point.x = waypoint_get_x(ATTRACTION_POINT_ID);
+  att_point.y = waypoint_get_y(ATTRACTION_POINT_ID);
+  attract(own_pos,&att_point,&acc, COMFY_DIST, ATTRECTION_MULTIPLIER);
+
+  rep_point.x = waypoint_get_x(REPELL_POINT_ID);
+  rep_point.y = waypoint_get_y(REPELL_POINT_ID);
+  repulse(own_pos,&rep_point,&acc, REGION_SIZE, REPULSION_MULTIPLIER);
 
   struct EnuCoor_f* vel = acInfoGetVelocityEnu_f(AC_ID);
   vel->x = VELOCITY_LIMIT * tanhf(vel->x+acc.x);
@@ -248,4 +308,5 @@ void swarm_follow_wp(void)
 
   // Move the waypoint
   waypoint_set_enu_i(SWARM_WAYPOINT_ID, &enu);
+  updateAttRepPoints(own_pos);
 }
