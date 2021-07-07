@@ -150,6 +150,20 @@ static void send_attract_and_repulse_info(struct transport_tx *trans, struct lin
 void swarm_init(void) {
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACC, send_acc_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATTREP, send_attract_and_repulse_info);
+  struct EnuCoor_i attPoint = { 0, 0, 0 };
+  struct EnuCoor_i repPoint = { 0, 0, 0 };
+
+  float dir_mult = -1.0f * roundf((float)rand() / (float)(RAND_MAX));
+  if (dir_mult > -0.9999999f) dir_mult = 1.0f;
+
+  attPoint.x = POS_BFP_OF_REAL(dir_mult * 5.0f * ((float)rand() / (float)(RAND_MAX)));
+  attPoint.y = POS_BFP_OF_REAL(dir_mult * 5.0f * ((float)rand() / (float)(RAND_MAX)));
+
+  repPoint.x = POS_BFP_OF_REAL(dir_mult * 15.0f * ((float)rand() / (float)(RAND_MAX)) - att_point.x);
+  repPoint.y = POS_BFP_OF_REAL(dir_mult * 15.0f * ((float)rand() / (float)(RAND_MAX)) - att_point.y);
+
+  waypoint_set_enu_i(ATTRACTION_POINT_ID, &attPoint);
+  waypoint_set_enu_i(REPELL_POINT_ID, &repPoint);
 }
 
 //ka = ka * multiplier
