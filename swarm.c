@@ -235,8 +235,8 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
     msg.repulsion = true;
     msg.attraction = true;
 
-    float strength_att = GRAVITY;
-    float strength_rep = (GRAVITY * multiplier) * expf(-(d*d)/c);
+    float strength_att = GRAVITY * att_multiplier;
+    float strength_rep = (GRAVITY * rep_multiplier) * expf(-(d*d)/c);
     msg.attraction_strength = strength_att;
     msg.repulsion_strength = strength_rep;
 
