@@ -126,10 +126,14 @@ struct Message_f {
 };
 
 static uint8_t tick = 0;
+struct LlaCoor_f offset;  // {lat,lon,alt};
 static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
-static struct EnuCoor_f att_points[] = { { 0.0f, 0.0f, 0.0f }, { 150.0f, 50.0f, 0.0f }, { 30.0f, 250.0f, 0.0f }, { -30.0f, -100.0f, 0.0f }, { -40.0f, -85.0f, 0.0f } };
-static struct EnuCoor_f rep_points[] = { { 40.0f, -20.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { -250.0f, -30.0f, 0.0f }, { 100.0f, 30.0f, 0.0f }, { 85.0f, 40.0f, 0.0f } };
+
+// lat and lon coordinates are specified in degrees
+static struct LlaCoor_f att_points[] = { { 0.0f, 0.0f, 0.0f }, { 150.0f, 50.0f, 0.0f }, { 30.0f, 250.0f, 0.0f }, { -30.0f, -100.0f, 0.0f }, { -40.0f, -85.0f, 0.0f } };
+static struct LlaCoor_f rep_points[] = { { 40.0f, -20.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { -250.0f, -30.0f, 0.0f }, { 100.0f, 30.0f, 0.0f }, { 85.0f, 40.0f, 0.0f } };
 static struct Message_f msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
+
 
 /** Get position in local ENU coordinates (float).
  * @param[in] ac_id aircraft id of aircraft info to get
@@ -236,26 +240,23 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
     acc->y += force.y;
 }
 
-static void updateAttRepPoints(struct EnuCoor_f* own_pos)
+static void updateAttRepPoints(struct LlaCoor_i* own_pos)
 {
-    if (((own_pos->x - att_points[tick].x)>-0.5f && (own_pos->x - att_points[tick].x)<0.5f) 
-     && ((own_pos->y - att_points[tick].y)>-0.5f && (own_pos->y - att_points[tick].y)<0.5f)) 
+    if (fabs(own_pos->lon - (int)(att_points[tick].lon * 1e7))<((int)(offset.lon*1e7*M_PI/180) - own_pos->lon)
+     && fabs(own_pos->lat - (int)(att_points[tick].lat * 1e7))<((int)(offset.lat*1e7*M_PI/180) - own_pos->lat))
     {
-        tick = (tick+1) % 4;
-        struct EnuCoor_i attPoint = { 0, 0, 0 };
-        struct EnuCoor_i repPoint = { 0, 0, 0 };
+        tick = (tick+1) % (sizeof(att_points)/sizeof(struct EnuCoor_f));
+        struct LlaCoor_i attPoint = { 0, 0, 0 };
+        struct LlaCoor_i repPoint = { 0, 0, 0 };
 
-        attPoint.x = POS_BFP_OF_REAL(att_points[tick].x);
-        attPoint.y = POS_BFP_OF_REAL(att_points[tick].y);
+        attPoint.lon = (int)(att_points[tick].lon*1e7);
+        attPoint.lat = (int)(att_points[tick].lat*1e7);
 
-        repPoint.x = POS_BFP_OF_REAL(rep_points[tick].x);
-        repPoint.y = POS_BFP_OF_REAL(rep_points[tick].y);
-
-        //waypoint_set_global_flag(ATTRACTION_POINT_ID);
-        //waypoint_set_global_flag(REPELL_POINT_ID);
+        repPoint.lon = (int)(rep_points[tick].lon*1e7);
+        repPoint.lat = (int)(rep_points[tick].lat*1e7);
         
-        waypoint_set_enu_i(ATTRACTION_POINT_ID, &attPoint);
-        waypoint_set_enu_i(REPELL_POINT_ID, &repPoint);
+        waypoint_set_latlon(ATTRACTION_POINT_ID, &attPoint);
+        waypoint_set_latlon(REPELL_POINT_ID, &repPoint);
     }
 }
 
@@ -312,5 +313,10 @@ void swarm_follow_wp(void)
 
   // Move the waypoint
   waypoint_set_enu_i(SWARM_WAYPOINT_ID, &enu);
-  updateAttRepPoints(own_pos);
+  struct LlaCoor_i* pos = stateGetPositionLla_i();
+  struct EcefCoor_f* ecef_pos = stateGetPositionEcef_f();
+  ecef_pos->x += 0.5f;
+  ecef_pos->y += 0.5f;
+  lla_of_ecef_f(&offset,ecef_pos);
+  updateAttRepPoints(pos);
 }
