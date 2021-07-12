@@ -131,8 +131,8 @@ static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
 
 // lat and lon coordinates are specified in degrees in contrast to the paparazzi documentation
 // alt coordinate is not used but should be specified as FLIGHT_HEIGHT
-static struct LlaCoor_f att_points[] = { {0.0f, 0.0f, FLIGHT_HEIGHT}, {150.0f, 50.0f, FLIGHT_HEIGHT}, {30.0f, 250.0f, FLIGHT_HEIGHT}, {-30.0f, -100.0f, FLIGHT_HEIGHT}, {-40.0f, -85.0f, FLIGHT_HEIGHT} };
-static struct LlaCoor_f rep_points[] = { {40.0f, -20.0f, FLIGHT_HEIGHT}, {0.0f, 0.0f, FLIGHT_HEIGHT}, {-250.0f, -30.0f, FLIGHT_HEIGHT}, {100.0f, 30.0f, FLIGHT_HEIGHT}, {85.0f, 40.0f, FLIGHT_HEIGHT} };
+static struct LlaCoor_f att_points[] = { {52.13878f, 11.64539f, FLIGHT_HEIGHT}, {52.13894f, 11.64589f, FLIGHT_HEIGHT}, {52.13899f, 11.64465f, FLIGHT_HEIGHT}, {52.13843f, 11.64448f, FLIGHT_HEIGHT}, {52.13829f, 11.64588f, FLIGHT_HEIGHT} };
+static struct LlaCoor_f rep_points[] = { {52.139193227158565f, 11.645442243819168f, FLIGHT_HEIGHT}, {52.13873185661875f, 11.64604126781022f, FLIGHT_HEIGHT}, {52.13983556877823f, 11.647903288820826f, FLIGHT_HEIGHT}, {52.13927000303959f, 11.646538979628147f, FLIGHT_HEIGHT}, {52.13972261306308f, 11.644770246818533f, FLIGHT_HEIGHT} };
 static struct Message_f msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
 
 
@@ -243,8 +243,8 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
 
 static void updateAttRepPoints(struct LlaCoor_i* own_pos)
 {
-    if (fabs(own_pos->lon - (int)(att_points[tick].lon * 1e7))<((int)(offset.lon*1e7*M_PI/180) - own_pos->lon)
-     && fabs(own_pos->lat - (int)(att_points[tick].lat * 1e7))<((int)(offset.lat*1e7*M_PI/180) - own_pos->lat))
+    if (abs(own_pos->lon - (int)(att_points[tick].lon * 1e7))<((int)(offset.lon*1e7*M_PI/180) - own_pos->lon)
+     && abs(own_pos->lat - (int)(att_points[tick].lat * 1e7))<((int)(offset.lat*1e7*M_PI/180) - own_pos->lat))
     {
         tick = (tick+1) % (sizeof(att_points)/sizeof(struct EnuCoor_f));
         struct LlaCoor_i attPoint = { 0, 0, 0 };
