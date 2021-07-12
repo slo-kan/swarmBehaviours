@@ -126,6 +126,7 @@ struct Message_f {
 };
 
 static uint8_t tick = 0;
+static bool init = false;
 struct LlaCoor_f offset;  //= {lat,lon,alt};  ->  lat, lon and alt coordinates are specified in radients(like specified in the paparazzi documentation)
 static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
 
@@ -243,8 +244,8 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
 
 static void updateAttRepPoints(struct LlaCoor_i* own_pos)
 {
-    if (abs(own_pos->lon - (int)(att_points[tick].lon * 1e7))<((int)(offset.lon*1e7*M_PI/180) - own_pos->lon)
-     && abs(own_pos->lat - (int)(att_points[tick].lat * 1e7))<((int)(offset.lat*1e7*M_PI/180) - own_pos->lat))
+    if (abs(own_pos->lon - (int)(att_points[tick].lon * 1e7))<=abs((int)(offset.lon*1e7*180/M_PI) - own_pos->lon)
+     && abs(own_pos->lat - (int)(att_points[tick].lat * 1e7))<=abs((int)(offset.lat*1e7*180/M_PI) - own_pos->lat))
     {
         tick = (tick+1) % (sizeof(att_points)/sizeof(struct EnuCoor_f));
         struct LlaCoor_i attPoint = { 0, 0, 0 };
@@ -258,6 +259,22 @@ static void updateAttRepPoints(struct LlaCoor_i* own_pos)
         
         waypoint_set_latlon(ATTRACTION_POINT_ID, &attPoint);
         waypoint_set_latlon(REPELL_POINT_ID, &repPoint);
+    }
+    else if (!init) 
+    {
+        struct LlaCoor_i attPoint = { 0, 0, 0 };
+        struct LlaCoor_i repPoint = { 0, 0, 0 };
+
+        attPoint.lon = (int)(att_points[tick].lon * 1e7);
+        attPoint.lat = (int)(att_points[tick].lat * 1e7);
+
+        repPoint.lon = (int)(rep_points[tick].lon * 1e7);
+        repPoint.lat = (int)(rep_points[tick].lat * 1e7);
+
+        waypoint_set_latlon(ATTRACTION_POINT_ID, &attPoint);
+        waypoint_set_latlon(REPELL_POINT_ID, &repPoint);
+
+        init = true;
     }
 }
 
@@ -315,8 +332,8 @@ void swarm_follow_wp(void)
   waypoint_set_enu_i(SWARM_WAYPOINT_ID, &enu);
   struct LlaCoor_i* pos = stateGetPositionLla_i();
   struct EcefCoor_f* ecef_pos = stateGetPositionEcef_f();
-  ecef_pos->x += 0.5f;
-  ecef_pos->y += 0.5f;
+  ecef_pos->x += 1.5f;
+  ecef_pos->y += 1.5f;
   lla_of_ecef_f(&offset,ecef_pos);
   updateAttRepPoints(pos);
 }
