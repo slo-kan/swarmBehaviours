@@ -24,9 +24,15 @@ epoche = 1
 
 
 def recv_callback(ac_id, recvMsg):
+<<<<<<< HEAD
+    if(recvMsg._PprzMessage__getitem__(achieved)>0):
+        if((ATT_POINTS[epoche%len(ATT_POINTS)][0]==recvMsg._PprzMessage__getitem__(lat)) and 
+           (ATT_POINTS[epoche%len(ATT_POINTS)][1]==recvMsg._PprzMessage__getitem__(lon))):
+=======
     if(recvMsg.__getitem__(achieved)>0):
         if((ATT_POINTS[epoche%len(ATT_POINTS)][0]==recvMsg.__getitem__(lat)) and 
            (ATT_POINTS[epoche%len(ATT_POINTS)][1]==recvMsg.__getitem__(lon))):
+>>>>>>> eb3563ed670fb7f6ae88a9daeb6f77784896b027
             out.close()
         
             for i,msg in enumerate(moveWP):
