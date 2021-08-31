@@ -132,9 +132,6 @@ struct Message_Goal {
    bool reached;
 };
 
-static uint8_t tick = 0;
-static bool init = false;
-
 //offset's lat, lon and alt coordinates are specified in radients(as specified in the paparazzi documentation)
 struct LlaCoor_f offset;  //= {lat,lon,alt};
 static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
@@ -144,7 +141,7 @@ static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
 // static struct LlaCoor_f att_points[] = { {52.13878f, 11.64539f, FLIGHT_HEIGHT}, {52.13894f, 11.64589f, FLIGHT_HEIGHT}, {52.13899f, 11.64465f, FLIGHT_HEIGHT}, {52.13843f, 11.64448f, FLIGHT_HEIGHT}, {52.13829f, 11.64588f, FLIGHT_HEIGHT} };
 // static struct LlaCoor_f rep_points[] = { {52.139193227158565f, 11.645442243819168f, FLIGHT_HEIGHT}, {52.13873185661875f, 11.64604126781022f, FLIGHT_HEIGHT}, {52.13983556877823f, 11.647903288820826f, FLIGHT_HEIGHT}, {52.13927000303959f, 11.646538979628147f, FLIGHT_HEIGHT}, {52.13972261306308f, 11.644770246818533f, FLIGHT_HEIGHT} };
 static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
-static struct Message_Goal syncLink = {AC_ID,{0,0,0},false};
+static struct Message_Goal syncLink = {AC_ID,{0,0,0},true};
 static struct LlaCoor_i att_point = {0,0,0};
 
 /** Get position in local ENU coordinates (float).
@@ -160,7 +157,7 @@ static void send_acc_info(struct transport_tx *trans, struct link_device *dev) {
 }
 
 static void send_goal_info(struct transport_tx *trans, struct link_device *dev) {
-	pprz_msg_send_ACC(trans, dev, AC_ID, &syncLink.ac_id,&syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached);
+	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.ac_id, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached);
 }
 
 static void send_attract_and_repulse_info(struct transport_tx *trans, struct link_device *dev) {
@@ -259,19 +256,14 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
 
 static void updateSyncLinkMsg(struct LlaCoor_i* own_pos)
 {
-    syncLink.own_pos.lat = own_pos.lat;
-    syncLink.own_pos.lon = own_pos.lon;
-    syncLink.own_pos.alt = own_pos.alt;
+    syncLink.own_pos.lat = own_pos->lat;
+    syncLink.own_pos.lon = own_pos->lon;
+    syncLink.own_pos.alt = own_pos->alt;
 
     if (abs(own_pos->lon - att_point.lon)<=abs((int)(offset.lon*1e7*180/M_PI) - own_pos->lon)
      && abs(own_pos->lat - att_point.lat)<=abs((int)(offset.lat*1e7*180/M_PI) - own_pos->lat))
-      syncLink.achieved = true;
-    else if (!init) 
-    {
-      syncLink.achieved = true;
-      init = true;
-    }
-    else syncLink.achieved = false;
+      syncLink.reached = true;
+    else syncLink.reached = false;
 }
 
 /*
@@ -326,12 +318,7 @@ void swarm_follow_wp(void)
 
   // Move the waypoint
   waypoint_set_enu_i(SWARM_WAYPOINT_ID, &enu);
-  //att_point.lat = waypoint_get_lat(ATTRACTION_POINT_ID);
-  //att_point.lon = waypoint_get_lon(ATTRACTION_POINT_ID);
-  //att_point.alt = waypoint_get_alt(ATTRACTION_POINT_ID);
-  //rep_point.lat = waypoint_get_lat(REPULSION_POINT_ID);
-  //rep_point.lon = waypoint_get_lon(REPULSION_POINT_ID);
-  //rep_point.alt = waypoint_get_alt(REPULSION_POINT_ID);
+  att_point = *waypoint_get_lla(ATTRACTION_POINT_ID);
   struct LlaCoor_i* pos = stateGetPositionLla_i();
   struct EcefCoor_f* ecef_pos = stateGetPositionEcef_f();
   ecef_pos->x += 1.5f;
