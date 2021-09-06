@@ -2,6 +2,7 @@
 
 #module imports
 import sys,time
+from threading import Thread
 from os import path,getenv
 
 #add PPRZ_HOME var to Path
@@ -12,24 +13,27 @@ sys.path.append(PPRZ_HOME+ "/var/lib/python")
 from pprzlink.ivy import IvyMessagesInterface
 from pprzlink.message import PprzMessage
 
-STANDARD_ALT = 47
-
-
 #####################
 # Class Definitions #
 #####################
 # Point defined as {lat,lon,alt} or {x,y,z}
 class Point:
-    idxs = {0: 0, 1: 1, 2: 2, 'lat': 0, 'lon': 1, 'alt': 2, 'x': 0, 'y': 1, 'z': 2}
+    @property
+    @staticmethod
+    def __IDXS(): return {0: 0, 1: 1, 2: 2, 'lat': 0, 'lon': 1, 'alt': 2, 'x': 0, 'y': 1, 'z': 2}
+    
+    @property
+    @staticmethod 
+    def __STANDARD_ALT(): return 47
 
-    def __init__(self,x,y,z=STANDARD_ALT):
+    def __init__(self,x,y,z=__STANDARD_ALT):
         self.coords = [x,y,z]
 
     def __getitem__(self,idx):
-        return self.coords[self.idxs[idx]]
+        return self.coords[self.__IDXS[idx]]
     
     def __setitem__(self,idx,val):
-        self.coords[self.idxs[idx]] = val
+        self.coords[self.__IDXS[idx]] = val
 
 
 #Input Function
@@ -54,22 +58,23 @@ def get_szenario(filename):
     return (att_points,rep_points)
 
 
-
 #global constants
 ATT_POINTS, REP_POINTS = get_szenario("flight_plan.cvs")
 START_ID, END_ID = (30,40)
 ATT_ID, REP_ID = (2,3)
+INTERFACE = IvyMessagesInterface(
+                agent_name="Pprzlink_Move_WP",      # Ivy agent name
+                start_ivy=False,                    # Do not start the ivy bus now
+                ivy_bus="127.255.255.255:2010"      # address of the ivy bus
+            )
 
 #global variables
-sending   = False
-updating  = False
-moveWP    = []
-epoche    = 0
-counter   = 1
-interface = IvyMessagesInterface(
-            agent_name="Pprzlink_Move_WP",      # Ivy agent name
-            start_ivy=False,                    # Do not start the ivy bus now
-            ivy_bus="127.255.255.255:2010")     # address of the ivy bus
+sendingThread = None
+updating      = False
+moveWP        = []
+epoche        = 0
+#counter       = 1
+
 
 
 
@@ -83,31 +88,41 @@ def createMSG(wp_id,ac_id,point):
     msg = PprzMessage("datalink", "MOVE_WP")
     msg.set_value_by_name("wp_id", wp_id)
     msg.set_value_by_name("ac_id", ac_id)
-    msg.set_value_by_name("lat", point[0])
-    msg.set_value_by_name("lon", point[1])
-    msg.set_value_by_name("alt", point[2])
+    msg.set_value_by_name("lat", point["lat"])
+    msg.set_value_by_name("lon", point["lon"])
+    msg.set_value_by_name("alt", point["alt"])
     return msg
 
 
 #send update msgs through interface
 def send_msgs():
-    global moveWP,interface, updating, sending
+    global moveWP, updating
 
-    #out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
-    sending = True
-    while(not updating):
-        for n in range(2):
+    if not updating:
+        out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
+    while(True):
+        string = ""
+        for _ in range(2):
             for i,msg in enumerate(moveWP):
                 time.sleep(0.1)
-                interface.send(msg)
-    #            out.write("%d. WP_Move-MSG: %s\n" % (i, msg))
-    #out.close()
-    sending = False
+                INTERFACE.send(msg)
+                string += ("%d. WP_Move-MSG: %s\n" % (i, msg))
+        out.write(string)
+        if updating: break
+    out.close()
+
+
+#function to create and start new thread
+def reset_thread():
+    global sendingThread
+
+    sendingThread = Thread(target=send_msgs,name="Send_Msg_Thread")
+    sendingThread.start()
 
 
 #manipulate goal points via msg updates
 def recv_callback(ac_id, recvMsg):
-    global epoche,moveWP,counter, updating, sending
+    global epoche, moveWP, updating, sendingThread#, counter
 
     if(int(recvMsg["achieved"])>0):
         #out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
@@ -118,21 +133,24 @@ def recv_callback(ac_id, recvMsg):
         if(abs(ATT_POINTS[epoche%len(ATT_POINTS)]["lat"]-int(recvMsg["lat"]))<500 and 
            abs(ATT_POINTS[epoche%len(ATT_POINTS)]["lon"]-int(recvMsg["lon"]))<500):
             updating = True
+            sendingThread.join()
+
             epoche += 1
-            #out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
-            #out.write("%d. Epoche: \n" % epoche)
-            #out.close()    
             moveWP = []
+            out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
+            out.write("%d. Epoche: \n" % epoche)
+            out.close()
+
             for AC_ID in range(START_ID, END_ID):
                 moveWP.append(createMSG(int(ATT_ID),int(AC_ID),ATT_POINTS[epoche%len(ATT_POINTS)]))
                 moveWP.append(createMSG(int(REP_ID),int(AC_ID),REP_POINTS[epoche%len(REP_POINTS)]))
             updating = False
-            send_msgs()
+            reset_thread()
             
 
 #main method
 def main():
-    global moveWP,interface
+    global moveWP
 
     #init vars
     for AC_ID in range(START_ID, END_ID):
@@ -144,13 +162,13 @@ def main():
 
     #run program
     try:
-        interface.start()
-        interface.subscribe(recv_callback,PprzMessage("telemetry", "GOAL_ACHIEVED"))
-        send_msgs()
+        INTERFACE.start()
+        INTERFACE.subscribe(recv_callback,PprzMessage("telemetry", "GOAL_ACHIEVED"))
+        reset_thread()
         while True: 
             time.sleep(10)
     except:
-        interface.shutdown()
+        INTERFACE.shutdown()
 
 
 #main program
