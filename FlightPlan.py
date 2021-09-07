@@ -18,22 +18,17 @@ from pprzlink.message import PprzMessage
 #####################
 # Point defined as {lat,lon,alt} or {x,y,z}
 class Point:
-    @property
-    @staticmethod
-    def __IDXS(): return {0: 0, 1: 1, 2: 2, 'lat': 0, 'lon': 1, 'alt': 2, 'x': 0, 'y': 1, 'z': 2}
-    
-    @property
-    @staticmethod 
-    def __STANDARD_ALT(): return 47
+    __IDXS = {0: 0, 1: 1, 2: 2, 'lat': 0, 'lon': 1, 'alt': 2, 'x': 0, 'y': 1, 'z': 2}
+    __STANDARD_ALT = int(47)
 
-    def __init__(self,x,y,z=__STANDARD_ALT):
-        self.coords = [x,y,z]
+    def __init__(self,x,y,z=int(__STANDARD_ALT)):
+        self.coords = [int(x),int(y),int(z)]
 
     def __getitem__(self,idx):
-        return self.coords[self.__IDXS[idx]]
+        return int(self.coords[self.__IDXS[idx]])
     
     def __setitem__(self,idx,val):
-        self.coords[self.__IDXS[idx]] = val
+        self.coords[self.__IDXS[idx]] = int(val)
 
 
 #Input Function
@@ -60,8 +55,8 @@ def get_szenario(filename):
 
 #global constants
 ATT_POINTS, REP_POINTS = get_szenario("flight_plan.cvs")
-START_ID, END_ID = (30,40)
-ATT_ID, REP_ID = (2,3)
+START_ID, END_ID = (int(30),int(40))                #end id is exclusiv 40 means last copter in the swarm has id 39
+ATT_ID, REP_ID = (int(2),int(3))
 INTERFACE = IvyMessagesInterface(
                 agent_name="Pprzlink_Move_WP",      # Ivy agent name
                 start_ivy=False,                    # Do not start the ivy bus now
@@ -98,8 +93,8 @@ def createMSG(wp_id,ac_id,point):
 def send_msgs():
     global moveWP, updating
 
-    if not updating:
-        out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
+    #if not updating:
+    #    out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
     while(True):
         string = ""
         for _ in range(2):
@@ -107,9 +102,10 @@ def send_msgs():
                 time.sleep(0.1)
                 INTERFACE.send(msg)
                 string += ("%d. WP_Move-MSG: %s\n" % (i, msg))
-        out.write(string)
+        #out.write(string)
         if updating: break
-    out.close()
+        time.sleep(1)
+    #out.close()
 
 
 #function to create and start new thread
@@ -130,8 +126,8 @@ def recv_callback(ac_id, recvMsg):
         #out.close()
         #counter+=1
 
-        if(abs(ATT_POINTS[epoche%len(ATT_POINTS)]["lat"]-int(recvMsg["lat"]))<500 and 
-           abs(ATT_POINTS[epoche%len(ATT_POINTS)]["lon"]-int(recvMsg["lon"]))<500):
+        if(abs(ATT_POINTS[epoche%len(ATT_POINTS)]["lat"]-int(recvMsg["lat"]))<1000 and 
+           abs(ATT_POINTS[epoche%len(ATT_POINTS)]["lon"]-int(recvMsg["lon"]))<1000):
             updating = True
             sendingThread.join()
 
@@ -141,21 +137,25 @@ def recv_callback(ac_id, recvMsg):
             out.write("%d. Epoche: \n" % epoche)
             out.close()
 
-            for AC_ID in range(START_ID, END_ID):
-                moveWP.append(createMSG(int(ATT_ID),int(AC_ID),ATT_POINTS[epoche%len(ATT_POINTS)]))
-                moveWP.append(createMSG(int(REP_ID),int(AC_ID),REP_POINTS[epoche%len(REP_POINTS)]))
+            for ac_ID in range(START_ID, END_ID):
+                moveWP.append(createMSG(ATT_ID,ac_ID,ATT_POINTS[epoche%len(ATT_POINTS)]))
+                moveWP.append(createMSG(REP_ID,ac_ID,REP_POINTS[epoche%len(REP_POINTS)]))
             updating = False
             reset_thread()
             
 
 #main method
 def main():
-    global moveWP
+    #out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
+    #out.write("First Att_Point: %d, %d, %d\n" % (ATT_POINTS[0]["lat"], ATT_POINTS[0]["lon"], ATT_POINTS[0]["alt"]))
+    #out.close()
+
+    global moveWP, sendingThread
 
     #init vars
-    for AC_ID in range(START_ID, END_ID):
-        moveWP.append(createMSG(int(ATT_ID),int(AC_ID),ATT_POINTS[0]))
-        moveWP.append(createMSG(int(REP_ID),int(AC_ID),REP_POINTS[0]))    
+    for ac_ID in range(START_ID, END_ID):
+        moveWP.append(createMSG(ATT_ID,ac_ID,ATT_POINTS[0]))
+        moveWP.append(createMSG(REP_ID,ac_ID,REP_POINTS[0]))    
     out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","a")
     out.write("Start_ID: "+str(START_ID)+"; End_ID: "+str(END_ID)+"; moveWP length: "+str(len(moveWP))+"\n")
     out.close()
@@ -168,7 +168,10 @@ def main():
         while True: 
             time.sleep(10)
     except:
+        updating = True
+        sendingThread.join()
         INTERFACE.shutdown()
+        
 
 
 #main program
