@@ -158,7 +158,7 @@ def main():
     #out.write("First Att_Point: %d, %d, %d\n" % (ATT_POINTS[0]["lat"], ATT_POINTS[0]["lon"], ATT_POINTS[0]["alt"]))
     #out.close()
 
-    global moveWP, sendingThread
+    global moveWP, sendingThread, updating
 
     #init vars
     for ac_ID in range(START_ID, END_ID):
