@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #module imports
-import sys,time
+import sys,time,math
 from threading import Thread
 from os import path,getenv
 
@@ -19,16 +19,16 @@ from pprzlink.message import PprzMessage
 # Point defined as {lat,lon,alt} or {x,y,z}
 class Point:
     __IDXS = {0: 0, 1: 1, 2: 2, 'lat': 0, 'lon': 1, 'alt': 2, 'x': 0, 'y': 1, 'z': 2}
-    __STANDARD_ALT = int(47)
+    __STANDARD_ALT = float(47)
 
-    def __init__(self,x,y,z=int(__STANDARD_ALT)):
-        self.coords = [int(x),int(y),int(z)]
+    def __init__(self,x,y,z=float(__STANDARD_ALT)):
+        self.coords = [float(x),float(y),float(z)]
 
     def __getitem__(self,idx):
-        return int(self.coords[self.__IDXS[idx]])
+        return float(self.coords[self.__IDXS[idx]])
     
     def __setitem__(self,idx,val):
-        self.coords[self.__IDXS[idx]] = int(val)
+        self.coords[self.__IDXS[idx]] = float(val)
 
 
 #Input Function
@@ -40,20 +40,21 @@ def get_szenario(filename):
     points = line.strip().split(";")
     for point in points:
         coords = point.strip().split(",")
-        coords = list(map(lambda coord: int(float(coord)*1e7),coords))
+        coords = list(map(lambda coord: (float(coord)*math.pi/180),coords))
         if len(coords)==3: att_points.append(Point(coords[0],coords[1],coords[2]))
         else: att_points.append(Point(coords[0],coords[1]))
     line = file.readline()
     points = line.strip().split(";")
     for point in points:
         coords = point.strip().split(",")
-        coords = list(map(lambda coord: int(float(coord)*1e7),coords))
+        coords = list(map(lambda coord: (float(coord)*math.pi/180),coords))
         if len(coords)==3: rep_points.append(Point(coords[0],coords[1],coords[2]))
         else: rep_points.append(Point(coords[0],coords[1]))
     return (att_points,rep_points)
 
 
 #global constants
+GLOBE_RADIUS = 6371000
 ATT_POINTS, REP_POINTS = get_szenario("flight_plan.cvs")
 START_ID, END_ID = (int(30),int(40))                #end id is exclusiv 40 means last copter in the swarm has id 39
 ATT_ID, REP_ID = (int(2),int(3))
@@ -115,6 +116,13 @@ def reset_thread():
     sendingThread = Thread(target=send_msgs,name="Send_Msg_Thread")
     sendingThread.start()
 
+#gets the metric distance between two points given in the LlaCoor_f format
+def getDistance(own_pos, goal_pos):
+    return (GLOBE_RADIUS * math.acos(                  
+    math.sin(own_pos["lat"])*math.sin(goal_pos["lat"]) +    
+    math.cos(own_pos["lat"])*math.cos(goal_pos["lat"]) *    
+    math.cos(own_pos["lon"] - goal_pos["lon"])))
+
 
 #manipulate goal points via msg updates
 def recv_callback(ac_id, recvMsg):
@@ -125,9 +133,9 @@ def recv_callback(ac_id, recvMsg):
         #out.write("%d. Goal_Achieved-MSG: %s\n" % (counter, recvMsg))
         #out.close()
         #counter+=1
+        own_pos = Point(float(recvMsg["lat"]),float(recvMsg["lon"]),float(recvMsg["alt"]))
 
-        if(abs(ATT_POINTS[epoche%len(ATT_POINTS)]["lat"]-int(recvMsg["lat"]))<1000 and 
-           abs(ATT_POINTS[epoche%len(ATT_POINTS)]["lon"]-int(recvMsg["lon"]))<1000):
+        if(getDistance(own_pos,ATT_POINTS[epoche%len(ATT_POINTS)])<=1.5):
             updating = True
             sendingThread.join()
 

@@ -35,7 +35,13 @@
 #include "subsystems/navigation/waypoints.h"
 #include "state.h"
 
-/* FOLLOW_OFFSET_ X Y and Z are all in ENU frame */
+
+//radius of the globe
+#ifndef GLOBE_RADIUS
+#define GLOBE_RADIUS 6371000
+#endif
+
+/* FOLLOW_OFFSET_ X and Y are all in ENU frame */
 #ifndef FOLLOW_OFFSET_X
 #define FOLLOW_OFFSET_X 0.0f
 #endif
@@ -128,21 +134,17 @@ struct Message_Debug {
 
 struct Message_Goal {
    uint8_t ac_id;
-   struct LlaCoor_i own_pos;
+   struct LlaCoor_f own_pos;
    bool reached;
 };
 
 //offset's lat, lon and alt coordinates are specified in radients(as specified in the paparazzi documentation)
 struct LlaCoor_f offset;  //= {lat,lon,alt};
 static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
-
-// lat and lon coordinates are specified in degrees in contrast to the paparazzi documentation
-// alt coordinate while not used needs to be specified -> FLIGHT_HEIGHT
-// static struct LlaCoor_f att_points[] = { {52.13878f, 11.64539f, FLIGHT_HEIGHT}, {52.13894f, 11.64589f, FLIGHT_HEIGHT}, {52.13899f, 11.64465f, FLIGHT_HEIGHT}, {52.13843f, 11.64448f, FLIGHT_HEIGHT}, {52.13829f, 11.64588f, FLIGHT_HEIGHT} };
-// static struct LlaCoor_f rep_points[] = { {52.139193227158565f, 11.645442243819168f, FLIGHT_HEIGHT}, {52.13873185661875f, 11.64604126781022f, FLIGHT_HEIGHT}, {52.13983556877823f, 11.647903288820826f, FLIGHT_HEIGHT}, {52.13927000303959f, 11.646538979628147f, FLIGHT_HEIGHT}, {52.13972261306308f, 11.644770246818533f, FLIGHT_HEIGHT} };
 static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
-static struct Message_Goal syncLink = {AC_ID,{0,0,0},false};
-static struct LlaCoor_i att_point = {0,0,0};
+static struct Message_Goal syncLink = {AC_ID,{0.0f,0.0f,0.0f},false};
+static struct LlaCoor_f att_point = {0,0,0};
+
 
 /** Get position in local ENU coordinates (float).
  * @param[in] ac_id aircraft id of aircraft info to get
@@ -164,11 +166,42 @@ static void send_attract_and_repulse_info(struct transport_tx *trans, struct lin
   pprz_msg_send_ATTREP(trans, dev, AC_ID, &msg.own_pos.x, &msg.own_pos.y, &msg.own_pos.z, &msg.target_pos.x, &msg.target_pos.y, &msg.target_pos.z, &msg.target_ac_id, &msg.attraction_force.x, &msg.attraction_force.y, &msg.attraction_force.z, &msg.attraction_d, &msg.attraction_strength, (uint8_t*)&msg.attraction, &msg.repulsion_force.x, &msg.repulsion_force.y, &msg.repulsion_force.z, &msg.repulsion_d, &msg.repulsion_strength, (uint8_t*)&msg.repulsion);
 }
 
-
 void swarm_init(void) {
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GOAL_ACHIEVED, send_goal_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACC, send_acc_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATTREP, send_attract_and_repulse_info);
+}
+
+
+//gets the metric distance between two points given in the LlaCoor_f format
+static float getDistance(struct LlaCoor_f* own_pos, struct LlaCoor_f* goal_pos)
+{
+  return GLOBE_RADIUS * acos(
+    sin(own_pos->lat)*sin(goal_pos->lat) + 
+    cos(own_pos->lat)*cos(goal_pos->lat) * 
+    cos(own_pos->lon - goal_pos->lon));
+}
+
+//converts from LlaCoor_i to LlaCoor_f by reducing to float value and switching from degrees to radients
+static struct LlaCoor_f toFloatPointFormat(struct LlaCoor_i* point)
+{
+  struct LlaCoor_f res = {0.0f,0.0f,FLIGHT_HEIGHT};
+  res.lon = (((float)point->lon)/1e7)*(M_PI/180);
+  res.lat = (((float)point->lat)/1e7)*(M_PI/180);
+  return res;
+}
+
+//updates the content of the periodicly sent goal_achieved message
+static void updateSyncLinkMsg(struct LlaCoor_f* own_pos)
+{
+    if(getDistance(own_pos, &att_point)<=1.5f)
+    {
+      syncLink.own_pos.lat = own_pos->lat;
+      syncLink.own_pos.lon = own_pos->lon;
+      syncLink.own_pos.alt = own_pos->alt;
+      syncLink.reached = true;
+    }
+    else syncLink.reached = false;
 }
 
 
@@ -254,19 +287,6 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
     acc->y += force.y;
 }
 
-static void updateSyncLinkMsg(struct LlaCoor_i* own_pos)
-{
-    if (abs(own_pos->lon - att_point.lon)<=abs((int)(offset.lon*1e7*180/M_PI) - own_pos->lon)
-     && abs(own_pos->lat - att_point.lat)<=abs((int)(offset.lat*1e7*180/M_PI) - own_pos->lat))
-      {
-        syncLink.own_pos.lat = own_pos->lat;
-        syncLink.own_pos.lon = own_pos->lon;
-        syncLink.own_pos.alt = own_pos->alt;
-        syncLink.reached = true;
-      }
-    else syncLink.reached = false;
-}
-
 /*
  * swarm_follow_wp(void)
  * updates the FOLLOW_WAYPOINT_ID to a fixed offset from the last received location
@@ -312,18 +332,15 @@ void swarm_follow_wp(void)
   vel->y = VELOCITY_LIMIT * tanhf(vel->y+acc.y);
   acInfoSetVelocityEnu_f(AC_ID,vel);
 
-  struct EnuCoor_i enu = *stateGetPositionEnu_i();
-  enu.x += POS_BFP_OF_REAL(vel->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
-  enu.y += POS_BFP_OF_REAL(vel->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
-  enu.z = POS_BFP_OF_REAL(FLIGHT_HEIGHT);
+  struct EnuCoor_i future_pos = *stateGetPositionEnu_i();
+  future_pos.x += POS_BFP_OF_REAL(vel->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
+  future_pos.y += POS_BFP_OF_REAL(vel->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
+  future_pos.z = POS_BFP_OF_REAL(FLIGHT_HEIGHT);
 
-  // Move the waypoint
-  waypoint_set_enu_i(SWARM_WAYPOINT_ID, &enu);
-  att_point = *waypoint_get_lla(ATTRACTION_POINT_ID);
-  struct LlaCoor_i* pos = stateGetPositionLla_i();
-  struct EcefCoor_f* ecef_pos = stateGetPositionEcef_f();
-  ecef_pos->x += 1.5f;
-  ecef_pos->y += 1.5f;
-  lla_of_ecef_f(&offset,ecef_pos);
-  updateSyncLinkMsg(pos);
+  // Move the waypoints
+  waypoint_set_enu_i(SWARM_WAYPOINT_ID, &future_pos);
+  struct LlaCoor_i* way_point = waypoint_get_lla(ATTRACTION_POINT_ID);
+  att_point = toFloatPointFormat(way_point);
+  struct LlaCoor_f current_pos = *stateGetPositionLla_f();
+  updateSyncLinkMsg(&current_pos);
 }
