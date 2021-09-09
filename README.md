@@ -13,5 +13,5 @@ The file [testParameters.py](testParameters.py) is a tool, that helps you determ
 
 
 ## Swarm Tasks/Arena Scenarios
-### *-> First Scenario: [flight_plan.cvs](Project-Code/flight_plan.cvs)*
-This file resembles a simple flight plan scenario in which the swarm has to fly to different locations one after another by reaching goal/attraction points and avoiding repell points
+### *-> First Scenario: [flight_plan.cvs](Project-Code/Scenarios/flight_plan.cvs)*
+This file resembles a simple flight plan scenario in which the swarm has to fly to different locations one after another by reaching goal/attraction points and avoiding repell points. The attraction point Corrdinates can be found in the first line of the file and the repell point coordinates can be found in the second line of the file. Each line in the file is representing an array of points seperated by a semicolon(;) and each point consist of latitude and longditude coordinates seperated by a comma(,). The coordinates are given in a floating point format with degrees as unit.
