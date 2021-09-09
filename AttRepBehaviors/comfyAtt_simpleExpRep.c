@@ -142,7 +142,7 @@ static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y += force.y;
 }
 
-//repulsion_force = (kb*exp(-||distance||²/2r²))*distance
+//repulsion_force = (kb*exp(-||distance||Â²/2rÂ²))*distance
 static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, uint8_t multiplier)
 {
   struct EnuCoor_f force = {
@@ -167,7 +167,7 @@ static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y -= force.y;
 }
 
-//total_force = (ka*(||distance||-d)/max(||distance||,0.01) - kb*exp(-||distance||²/2r²))*distance
+//total_force = (ka*(||distance||-d)/max(||distance||,0.01) - kb*exp(-||distance||Â²/2rÂ²))*distance
 static void attRep(struct EnuCoor_f* own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float comfy_dist, float radius, uint8_t multiplier)
 {
     struct EnuCoor_f force = {
