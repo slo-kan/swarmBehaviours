@@ -18,3 +18,6 @@ This file resembles a simple flight plan scenario in which the swarm has to fly 
 
 ### *-> Second Scenario: [flight_plan_circle.cvs](Project-Code/Scenarios/flight_plan_circle.cvs)*
 Each line is representing an array of points separated by semicolan(;) and each point has a latitude and longitude separtaed by comma(,) in the same order. First line consists of a repel point. Second line consists of 10 attraction points in a circle of radius 50 meters with repel point as center. Third line consists of 10 points in a circle of radius 5 meters with repel point as center to spawn the aircrafts.
+
+### *-> Third Scenario: [flight_plan_tube.cvs](Project-Code/Scenarios/flight_plan_tube.cvs)*
+This file resembles a simple flight plan scenario in which the swarm has to fly through a tube of repell points to a horde of attraction points at the other side of the tube. The  20 repell point Corrdinates can be found in the first line of the file and the 20 attraction point coordinates can be found in the second line of the file. Each line in the file is representing an array of points seperated by a semicolon(;) and each point consist of latitude and longditude coordinates seperated by a comma(,). The coordinates are given in a floating point format with degrees as unit.
