@@ -155,7 +155,7 @@ def send_msgs():
 
 #gets the metric distance between two points given in the LlaCoor_f format
 def getDistance(own_pos:Point, goal_pos:Point)->float:
-    return ( GLOBE_RADIUS * math.acos(                  
+    return float( GLOBE_RADIUS * math.acos(                  
         math.sin(own_pos["lat"]) * math.sin(goal_pos["lat"]) +    
         math.cos(own_pos["lat"]) * math.cos(goal_pos["lat"]) *    
         math.cos(own_pos["lon"] - goal_pos["lon"])
@@ -208,7 +208,7 @@ def main():
         MSG_SENDING_THREAD.start()
         while True: 
             time.sleep(10)
-    except: pass
+    except: LOGGER.write("...Stopped FlightPlan\n")
     finally:
         terminate = True
         MSG_SENDING_THREAD.join()

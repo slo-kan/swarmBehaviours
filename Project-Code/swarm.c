@@ -133,16 +133,20 @@ struct Message_Debug {
 };
 
 struct Message_Goal {
-   struct LlaCoor_f own_pos;
+   struct LlaCoor_f own_pos;  
    bool reached;
 };
 
-//offset's lat, lon and alt coordinates are specified in radients(as specified in the paparazzi documentation)
-struct LlaCoor_f offset;  //= {lat,lon,alt};
 static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
 static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
 static struct Message_Goal syncLink = {{0.0f,0.0f,0.0f},false};
-static struct LlaCoor_f att_point = {0,0,0};
+static struct LlaCoor_f att_point = {0.0f,0.0f,0.0f};
+static struct LlaCoor_f current_pos = {0.0f,0.0f,0.0f};
+
+//LlaCoor_f = {lat,lon,alt} specified in radients in a floating point number format(as specified in the paparazzi documentation)
+//LlaCoor_i = {lat,lon,alt} specified in degrees in an integer format(as specified in the paparazzi documentation)
+//EnuCoor_i = {lat,lon,alt} specified in meters in an integer format(as specified in the paparazzi documentation)
+//EnuCoor_f = {lat,lon,alt} specified in meters in an floating point number format(as specified in the paparazzi documentation)
 
 
 /** Get position in local ENU coordinates (float).
@@ -340,6 +344,6 @@ void swarm_follow_wp(void)
   waypoint_set_enu_i(SWARM_WAYPOINT_ID, &future_pos);
   struct LlaCoor_i* way_point = waypoint_get_lla(ATTRACTION_POINT_ID);
   att_point = toFloatPointFormat(way_point);
-  struct LlaCoor_f current_pos = *stateGetPositionLla_f();
+  current_pos = *stateGetPositionLla_f();
   updateSyncLinkMsg(&current_pos);
 }
