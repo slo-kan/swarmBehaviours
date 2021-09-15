@@ -133,7 +133,6 @@ struct Message_Debug {
 };
 
 struct Message_Goal {
-   uint8_t ac_id;
    struct LlaCoor_f own_pos;
    bool reached;
 };
@@ -142,7 +141,7 @@ struct Message_Goal {
 struct LlaCoor_f offset;  //= {lat,lon,alt};
 static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
 static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
-static struct Message_Goal syncLink = {AC_ID,{0.0f,0.0f,0.0f},false};
+static struct Message_Goal syncLink = {{0.0f,0.0f,0.0f},false};
 static struct LlaCoor_f att_point = {0,0,0};
 
 
@@ -159,7 +158,7 @@ static void send_acc_info(struct transport_tx *trans, struct link_device *dev) {
 }
 
 static void send_goal_info(struct transport_tx *trans, struct link_device *dev) {
-	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.ac_id, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached);
+	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached);
 }
 
 static void send_attract_and_repulse_info(struct transport_tx *trans, struct link_device *dev) {

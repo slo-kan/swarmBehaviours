@@ -59,7 +59,7 @@ class ThreadSafe_Logger:
 
     def write(self, data:str): self.__QUEUE.put(data)
     def close(self):
-        self.__finished = False
+        self.__finished = True
         self.__QUEUE.join()
         self.__WORKER.join()
         self.__FILE_WRITER.close() 
@@ -115,14 +115,19 @@ epoche    :int    = 0
 # Function Definitions #
 ########################
 
+#converts a LLA-Point from float radial representation to a int degree representation
+def convertToInt(point:Point)->"tuple[int]":
+    lat = int((point["lat"]*180/math.pi)*1e7)
+    lon = int((point["lon"]*180/math.pi)*1e7)
+    alt = int((point["alt"]*180/math.pi)*1e7)
+    return (lat,lon,alt)
+
 #create PprzMessage            
 def createMSG(wp_id:int,ac_id:int,point:Point)->"PprzMessage":
     msg = PprzMessage("datalink", "MOVE_WP")
-    msg['wp_id'] = wp_id
-    msg['ac_id'] = ac_id
-    msg['lat'] = point["lat"]
-    msg['lon'] = point["lon"]
-    msg['alt'] = point["alt"]
+    msg["wp_id"] = wp_id
+    msg["ac_id"] = ac_id
+    msg["lat"],msg["lon"],msg["alt"] = convertToInt(point)
     return msg
 
 
@@ -136,15 +141,15 @@ def send_msgs():
             string = ""
             for it in range(2):
                 for i,msg in enumerate(moveWP):
-                    time.sleep(0.01)
+                    time.sleep(0.2)
                     INTERFACE.send(msg)
                     if it>0: 
                         pre = str("ATT" if ATT_ID == msg['wp_id'] else "REP")
                         string += ("%2d. %3s-WP_Move-MSG: %s\n" % (i, pre, msg))
-                time.sleep(0.1)
+                time.sleep(1)
             LOGGER.write(string)
         if terminate: break
-        else: time.sleep(1)
+        else: time.sleep(3)
     LOGGER.write("... MSG-Thread closed! \n")
 
 
@@ -172,9 +177,9 @@ def recv_callback(ac_id, recvMsg):
             with MSG_ACCESS:
                 epoche += 1
                 moveWP = []
-                for ac_ID in range(START_ID, END_ID):
-                    moveWP.append(createMSG(ATT_ID,ac_ID,ATT_POINTS[epoche%len(ATT_POINTS)]))
-                    moveWP.append(createMSG(REP_ID,ac_ID,REP_POINTS[epoche%len(REP_POINTS)]))
+                for acId in range(START_ID, END_ID):
+                    moveWP.append(createMSG(ATT_ID,acId,ATT_POINTS[epoche%len(ATT_POINTS)]))
+                    moveWP.append(createMSG(REP_ID,acId,REP_POINTS[epoche%len(REP_POINTS)]))
                 LOGGER.write("%d send this valid Goal_Achieved-MSG: %s\n" % (ac_id, recvMsg))
                 LOGGER.write("%d. Epoche - " % epoche)
             
@@ -186,13 +191,14 @@ def main():
     out = open("/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.log","w")
     out.write("Start FlightPlan...\n")
     out.close()
+    time.sleep(3)
 
     #init vars
     LOGGER.start()
     MSG_SENDING_THREAD = Thread(target=send_msgs,name="Send_Msg_Thread")
-    for ac_ID in range(START_ID, END_ID):
-        moveWP.append(createMSG(ATT_ID,ac_ID,ATT_POINTS[0]))
-        moveWP.append(createMSG(REP_ID,ac_ID,REP_POINTS[0]))    
+    for acId in range(START_ID, END_ID):
+        moveWP.append(createMSG(ATT_ID,acId,ATT_POINTS[0]))
+        moveWP.append(createMSG(REP_ID,acId,REP_POINTS[0]))    
     LOGGER.write(str("Start_ID: "+str(START_ID)+"; End_ID: "+str(END_ID)+"; moveWP length: "+str(len(moveWP))+"\n"))
 
     #run program
