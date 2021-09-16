@@ -13,8 +13,8 @@ The file [testParameters.py](testParameters.py) is a tool, that helps you determ
 
 
 ## Swarm Tasks/Arena Scenarios
-### *-> First Scenario: [flight_plan.cvs](Project-Code/Scenarios/flight_plan.cvs)*
-This file resembles a simple flight plan scenario in which the swarm has to fly to different locations one after another by reaching goal/attraction points and avoiding repell points. The attraction point Corrdinates can be found in the first line of the file and the repell point coordinates can be found in the second line of the file. Each line in the file is representing an array of points seperated by a semicolon(;) and each point consist of latitude and longditude coordinates seperated by a comma(,). The coordinates are given in a floating point format with degrees as unit.
+### *-> First Scenario: [flight_plan.csv](Project-Code/Scenarios/flight_plan.csv)*
+This file resembles a simple flight plan scenario in which the swarm has to fly to different locations one after another by reaching goal/attraction points and avoiding repell points. The repell point corrdinates, attraction point coordinates and spawn point coordinates can be found each in one line. The first row gives each collumn a name. Coordinates can also be found here : https://www.google.com/maps/d/u/0/edit?mid=1aDNCp8DNH7VNPh4EjR8B5AbEjCzVExEa&usp=sharing.
 
 ### *-> Second Scenario: [flight_plan_circle.csv](Project-Code/Scenarios/flight_plan_circle.csv)*
 This file resembles a simple flight plan scenario in which the swarm is placed in a cirlce 5 meters away from a repell point, which is in the center of the scene. Also 10 attraction points set in a circle with a radius of 50 meters around the repell point. The first row gives each collumn a name. Coordinates can also be found here : https://www.google.com/maps/d/u/0/edit?mid=1aDNCp8DNH7VNPh4EjR8B5AbEjCzVExEa&usp=sharing.
