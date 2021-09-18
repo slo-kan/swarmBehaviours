@@ -42,9 +42,9 @@ class ThreadSafe_Logger:
     __finished:bool = False
 
     def __write_to_file(self):
-        while not self.__finished:
-            try: data = self.__QUEUE.get()
-            except: time.sleep(3)
+        while not self.__finished or not self.__QUEUE.empty():
+            try: data = self.__QUEUE.get(timeout=0.2)
+            except Empty: time.sleep(1)
             else: 
                 self.__FILE_WRITER.write(data)
                 self.__QUEUE.task_done()
@@ -56,9 +56,11 @@ class ThreadSafe_Logger:
     def start(self): 
         self.__FILE_WRITER = open(self.__FILENAME,"a")
         self.__WORKER.start()
+        self.write("Logging_Thread started...\n")
 
     def write(self, data:str): self.__QUEUE.put(data)
     def close(self):
+        self.write("... Logging_Thread closed!\n")
         self.__finished = True
         self.__QUEUE.join()
         self.__WORKER.join()
@@ -94,7 +96,7 @@ ATT_POINTS, REP_POINTS = get_szenario("flight_plan.cvs")
 START_ID, END_ID = (int(30),int(40))                #end id is exclusiv 40 means last copter in the swarm has id 39
 ATT_ID, REP_ID = (int(2),int(3))
 MSG_ACCESS:Lock = Lock()
-GLOBE_RADIUS = 6371000
+GLOBE_RADIUS:int = int(6371000)
 INTERFACE = IvyMessagesInterface(
                 agent_name="Pprzlink_Move_WP",      # Ivy agent name
                 start_ivy=False,                    # Do not start the ivy bus now
@@ -119,15 +121,24 @@ epoche    :int    = 0
 def convertToInt(point:Point)->"tuple[int]":
     lat = int((point["lat"]*180/math.pi)*1e7)
     lon = int((point["lon"]*180/math.pi)*1e7)
-    alt = int((point["alt"]*180/math.pi)*1e7)
+    alt = int(point["alt"])
     return (lat,lon,alt)
+
+
+#converts a LLA-Point from float radial representation to float degree representation
+def convertToDegree(point:Point)->"tuple[float]":
+    lat = float(point["lat"]*180/math.pi)
+    lon = float(point["lon"]*180/math.pi)
+    alt = float(point["alt"])
+    return (lat,lon,alt)
+
 
 #create PprzMessage            
 def createMSG(wp_id:int,ac_id:int,point:Point)->"PprzMessage":
-    msg = PprzMessage("datalink", "MOVE_WP")
-    msg["wp_id"] = wp_id
-    msg["ac_id"] = ac_id
-    msg["lat"],msg["lon"],msg["alt"] = convertToInt(point)
+    msg = PprzMessage("ground", "MOVE_WAYPOINT")
+    msg['wp_id'] = wp_id
+    msg['ac_id'] = str(ac_id)
+    msg['lat'],msg['lon'],msg['alt'] = convertToDegree(point)
     return msg
 
 
@@ -136,21 +147,23 @@ def send_msgs():
     global moveWP, terminate
     
     LOGGER.write("MSG-Thread started ... \n")
-    while(True):
-        with MSG_ACCESS:
+    while not terminate:
+        aquired = MSG_ACCESS.acquire(timeout=2.0)
+        if aquired:
+            LOGGER.write("len(moveWP) = %d\n" % len(moveWP))
             string = ""
-            for it in range(2):
-                for i,msg in enumerate(moveWP):
-                    time.sleep(0.2)
-                    INTERFACE.send(msg)
-                    if it>0: 
-                        pre = str("ATT" if ATT_ID == msg['wp_id'] else "REP")
-                        string += ("%2d. %3s-WP_Move-MSG: %s\n" % (i, pre, msg))
-                time.sleep(1)
+            for i,msg in enumerate(moveWP):
+                time.sleep(0.2)
+                INTERFACE.send(msg)
+                pre = str("ATT" if ATT_ID == msg['wp_id'] else "REP")
+                string += ("%2d. %3s-WP_Move-MSG: %s\n" % (i, pre, msg))
             LOGGER.write(string)
-        if terminate: break
-        else: time.sleep(3)
+            MSG_ACCESS.release()
+            time.sleep(3)
     LOGGER.write("... MSG-Thread closed! \n")
+
+#create constant global MSG_SENDING_THREAD 
+MSG_SENDING_THREAD = Thread(target=send_msgs,name="Send_Msg_Thread")
 
 
 #gets the metric distance between two points given in the LlaCoor_f format
@@ -174,7 +187,8 @@ def recv_callback(ac_id, recvMsg):
         #counter+=1
 
         if(getDistance(own_pos,ATT_POINTS[epoche%len(ATT_POINTS)])<=1.5):
-            with MSG_ACCESS:
+            aquired = MSG_ACCESS.acquire(timeout=3.0)
+            if aquired:
                 epoche += 1
                 moveWP = []
                 for acId in range(START_ID, END_ID):
@@ -182,6 +196,7 @@ def recv_callback(ac_id, recvMsg):
                     moveWP.append(createMSG(REP_ID,acId,REP_POINTS[epoche%len(REP_POINTS)]))
                 LOGGER.write("%d send this valid Goal_Achieved-MSG: %s\n" % (ac_id, recvMsg))
                 LOGGER.write("%d. Epoche - " % epoche)
+                MSG_ACCESS.release()
             
 
 #main method
@@ -195,23 +210,25 @@ def main():
 
     #init vars
     LOGGER.start()
-    MSG_SENDING_THREAD = Thread(target=send_msgs,name="Send_Msg_Thread")
-    for acId in range(START_ID, END_ID):
-        moveWP.append(createMSG(ATT_ID,acId,ATT_POINTS[0]))
-        moveWP.append(createMSG(REP_ID,acId,REP_POINTS[0]))    
+    with MSG_ACCESS:
+        for acId in range(START_ID, END_ID):
+            moveWP.append(createMSG(ATT_ID,acId,ATT_POINTS[0]))
+            moveWP.append(createMSG(REP_ID,acId,REP_POINTS[0]))    
     LOGGER.write(str("Start_ID: "+str(START_ID)+"; End_ID: "+str(END_ID)+"; moveWP length: "+str(len(moveWP))+"\n"))
+    LOGGER.write("Init-Epoche - ")
 
     #run program
     try:
         INTERFACE.start()
         INTERFACE.subscribe(recv_callback,PprzMessage("telemetry", "GOAL_ACHIEVED"))
         MSG_SENDING_THREAD.start()
-        while True: 
-            time.sleep(10)
-    except: LOGGER.write("...Stopped FlightPlan\n")
+        time.sleep(15)
+        raise KeyboardInterrupt
+    except KeyboardInterrupt: LOGGER.write("... !STOPPING FlightPlan! ...\n")
     finally:
         terminate = True
         MSG_SENDING_THREAD.join()
+        time.sleep(3)
         LOGGER.close()
         INTERFACE.shutdown()
         
