@@ -197,7 +197,7 @@ static struct LlaCoor_f toFloatPointFormat(struct LlaCoor_i* point)
 //updates the content of the periodicly sent goal_achieved message
 static void updateSyncLinkMsg(struct LlaCoor_f* own_pos)
 {
-    if(getDistance(own_pos, &att_point)<=1.5f)
+    if(getDistance(own_pos, &att_point)<=16.25f)
     {
       syncLink.own_pos.lat = own_pos->lat;
       syncLink.own_pos.lon = own_pos->lon;
