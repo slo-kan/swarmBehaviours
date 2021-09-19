@@ -13,11 +13,11 @@ The file [testParameters.py](testParameters.py) is a tool, that helps you determ
 
 
 ## Swarm Tasks/Arena Scenarios
-### *-> First Scenario: [flight_plan.csv](Project-Code/Scenarios/flight_plan.csv)*
+### *-> First Scenario: [simple_flight_plan.csv](Project-Code/Scenarios/simple_flight_plan.csv)*
 This file resembles a simple flight plan scenario in which the swarm has to fly to different locations one after another by reaching goal/attraction points and avoiding repell points. The repell point corrdinates, attraction point coordinates and spawn point coordinates can be found each in one line. The first row gives each collumn a name. Coordinates can also be found [here](https://www.google.com/maps/d/u/0/edit?mid=1aDNCp8DNH7VNPh4EjR8B5AbEjCzVExEa&usp=sharing).
 
-### *-> Second Scenario: [flight_plan_circle.csv](Project-Code/Scenarios/flight_plan_circle.csv)*
+### *-> Second Scenario: [circle.csv](Project-Code/Scenarios/circle.csv)*
 This file resembles a simple flight plan scenario in which the swarm is placed in a cirlce 5 meters away from a repell point, which is in the center of the scene. Also 10 attraction points set in a circle with a radius of 50 meters around the repell point. The first row gives each collumn a name. Coordinates can also be found [here](https://www.google.com/maps/d/u/0/edit?mid=1aDNCp8DNH7VNPh4EjR8B5AbEjCzVExEa&usp=sharing).
 
-### *-> Third Scenario: [flight_plan_tube.csv](Project-Code/Scenarios/flight_plan_tube.csv)*
+### *-> Third Scenario: [tube.csv](Project-Code/Scenarios/tube.csv)*
 This file resembles a simple flight plan scenario in which the swarm has to fly through a tube of repell points to a horde of attraction points at the other side of the tube. The  10 repell point corrdinates, attraction point coordinates and spawn point coordinates can be found each in one line. The first row gives each collumn a name. Coordinates can also be found [here](https://www.google.com/maps/d/u/0/edit?mid=1aDNCp8DNH7VNPh4EjR8B5AbEjCzVExEa&usp=sharing).
