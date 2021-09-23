@@ -99,12 +99,20 @@
 #error "Please define SWARM_WAYPOINT_ID with the ID of FOLLOW wp"
 #endif
 
-#ifndef ATTRACTION_POINT_ID
-#error "Please define the ATTRACTION_POINT_ID"
+#ifndef FIRST_ATTRACTION_POINT_ID
+#error "Please define the FIRST_ATTRACTION_POINT_ID"
 #endif
 
-#ifndef REPELL_POINT_ID
-#error "Please define the REPELL_POINT_ID"
+#ifndef LAST_ATTRACTION_POINT_ID
+#error "Please define the LAST_ATTRACTION_POINT_ID"
+#endif
+
+#ifndef FIRST_REPELL_POINT_ID
+#error "Please define the  FIRST_REPELL_POINT_ID"
+#endif
+
+#ifndef LAST_REPELL_POINT_ID
+#error "Please define the  LAST_REPELL_POINT_ID"
 #endif
 
 #ifndef FIRST_SWARM_MEMBER_ID
@@ -133,13 +141,14 @@ struct Message_Debug {
 };
 
 struct Message_Goal {
+   uint8_t wp_id;
    struct LlaCoor_f own_pos;  
    bool reached;
 };
 
 static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
 static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
-static struct Message_Goal syncLink = {{0.0f,0.0f,0.0f},false};
+static struct Message_Goal syncLink = {0,{0.0f,0.0f,0.0f},false};
 static struct LlaCoor_f att_point = {0.0f,0.0f,0.0f};
 static struct LlaCoor_f current_pos = {0.0f,0.0f,0.0f};
 
@@ -162,7 +171,7 @@ static void send_acc_info(struct transport_tx *trans, struct link_device *dev) {
 }
 
 static void send_goal_info(struct transport_tx *trans, struct link_device *dev) {
-	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached);
+	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.wp_id, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached);
 }
 
 static void send_attract_and_repulse_info(struct transport_tx *trans, struct link_device *dev) {
@@ -195,10 +204,11 @@ static struct LlaCoor_f toFloatPointFormat(struct LlaCoor_i* point)
 }
 
 //updates the content of the periodicly sent goal_achieved message
-static void updateSyncLinkMsg(struct LlaCoor_f* own_pos)
+static void updateSyncLinkMsg(struct LlaCoor_f* own_pos, uint8_t att_point_id)
 {
     if(getDistance(own_pos, &att_point)<=16.25f)
     {
+      syncLink.wp_id = att_point_id;
       syncLink.own_pos.lat = own_pos->lat;
       syncLink.own_pos.lon = own_pos->lon;
       syncLink.own_pos.alt = own_pos->alt;
@@ -320,15 +330,21 @@ void swarm_follow_wp(void)
     }
   }
 
-  struct EnuCoor_f current_att_point = { 0.0f, 0.0f, 0.0f };
-  current_att_point.x = waypoint_get_x(ATTRACTION_POINT_ID);
-  current_att_point.y = waypoint_get_y(ATTRACTION_POINT_ID);
-  attract(own_pos,&current_att_point,&acc, ATTRECTION_MULTIPLIER);
+  for(uint8_t wp_id = FIRST_ATTRACTION_POINT_ID; wp_id < LAST_ATTRACTION_POINT_ID; ++wp_id)
+  {
+    struct EnuCoor_f current_att_point = { 0.0f, 0.0f, 0.0f };
+    current_att_point.x = waypoint_get_x(wp_id);
+    current_att_point.y = waypoint_get_y(wp_id);
+    attract(own_pos,&current_att_point,&acc, ATTRECTION_MULTIPLIER);
+  }
 
-  struct EnuCoor_f current_rep_point = { 0.0f, 0.0f, 0.0f };
-  current_rep_point.x = waypoint_get_x(REPELL_POINT_ID);
-  current_rep_point.y = waypoint_get_y(REPELL_POINT_ID);
-  repulse(own_pos,&current_rep_point,&acc, REGION_SIZE, REPULSION_MULTIPLIER);
+  for(uint8_t wp_id = FIRST_REPELL_POINT_ID; wp_id < LAST_REPELL_POINT_ID; ++wp_id)
+  {
+    struct EnuCoor_f current_rep_point = { 0.0f, 0.0f, 0.0f };
+    current_rep_point.x = waypoint_get_x(wp_id);
+    current_rep_point.y = waypoint_get_y(wp_id);
+    repulse(own_pos,&current_rep_point,&acc, REGION_SIZE, REPULSION_MULTIPLIER);
+  }
 
   struct EnuCoor_f* vel = acInfoGetVelocityEnu_f(AC_ID);
   vel->x = VELOCITY_LIMIT * tanhf(vel->x+acc.x);
@@ -342,8 +358,11 @@ void swarm_follow_wp(void)
 
   // Move the waypoints
   waypoint_set_enu_i(SWARM_WAYPOINT_ID, &future_pos);
-  struct LlaCoor_i* way_point = waypoint_get_lla(ATTRACTION_POINT_ID);
-  att_point = toFloatPointFormat(way_point);
-  current_pos = *stateGetPositionLla_f();
-  updateSyncLinkMsg(&current_pos);
+  for(uint8_t wp_id = FIRST_ATTRACTION_POINT_ID; wp_id < LAST_ATTRACTION_POINT_ID; ++wp_id)
+  {
+    struct LlaCoor_i* way_point = waypoint_get_lla(wp_id);
+    att_point = toFloatPointFormat(way_point);
+    current_pos = *stateGetPositionLla_f();
+    updateSyncLinkMsg(&current_pos, wp_id);
+  }
 }
