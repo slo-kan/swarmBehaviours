@@ -44,7 +44,9 @@ class Point:
 
 # Simple but thread safe logger
 class ThreadSafe_Logger:
-    __QUEUE:Queue = Queue()
+    __FILE_WRITER = None
+    __WORKER:Thread = None
+    __QUEUE:"Queue[str]" = Queue()
     __finished:bool = False
 
     def __write_to_file(self):
@@ -146,6 +148,7 @@ def get_szenario(filename)->"tuple[list[Point]]":
 class WPMover:
 
     #global variables
+    __LOGGER:ThreadSafe_Logger = None
     __MSG_SENDING_THREAD:Thread = None
     __MSG_UPDATE_THREAD:Thread = None
     __MSG_ACCESS:Lock = Lock()
@@ -159,9 +162,9 @@ class WPMover:
 
     #init the WP-Mover tool
     def __init__(self,fname:str,start_id:int,end_id:int,att_ids:"list[int]",rep_ids:"list[int]",atts:"list[Point]",reps:"list[Point]",update_type:str,Debug:bool=False):
-        self.__LOGGER:ThreadSafe_Logger = ThreadSafe_Logger(fname)
+        self.__LOG:str = fname
         self.__DEBUG:bool = Debug
-        self.__update:str = update_type
+        self.__UPDATE:str = update_type
         self.__ATT_IDS:"list[int]" = att_ids
         self.__REP_IDS:"list[int]" = rep_ids
         self.__END_ID:int = end_id      #end_id is exclusiv 40 means last copter in the swarm has id 39
@@ -196,6 +199,7 @@ class WPMover:
     
     #main method - executes the program
     def run(self):
+        self.__LOGGER = ThreadSafe_Logger(self.__LOG)
 
         #send update msgs through interface
         def send_msgs():
@@ -220,7 +224,7 @@ class WPMover:
             if(int(recvMsg["achieved"])>0):
                 own_pos = Point(float(recvMsg["lat"]),float(recvMsg["lon"]),float(recvMsg["alt"]))
                 att_id = int(recvMsg["wp_id"])
-                data:"tuple[Point,int]" = (own_pos,att_id)
+                data:"tuple[Point,int,int,PprzMessage]" = (own_pos,att_id,ac_id,recvMsg)
                 self.__MSG_QUEUE.put(data)
             if self.__DEBUG: 
                 self.__LOGGER.write("%d. Goal_Achieved-MSG: %s\n" % (self.__counter, recvMsg))
@@ -232,39 +236,39 @@ class WPMover:
                 try: data = self.__MSG_QUEUE.get(timeout=0.2)
                 except Empty: time.sleep(1)
                 else: 
-                    own_pos,att_id = data
+                    own_pos,att_id,ac_id,recvMsg = data
                     if(getDistance(own_pos,self.__ATT_POINTS[((att_id-2)+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)])<=16.25):
                         with self.__MSG_ACCESS:
                             self.__epoche += 1
                             self.__moveWP = []
                             for acId in range(self.__START_ID, self.__END_ID):
-                                if self.__update == "all":
+                                if self.__UPDATE == "all":
                                     for idx,attID in enumerate(self.__ATT_IDS): 
                                         self.__moveWP.append(createMSG(attID,acId,self.__ATT_POINTS[(idx*self.__epoche)%len(self.__ATT_POINTS)]))
-                                elif self.__update == "single":
+                                elif self.__UPDATE == "single":
                                     self.__moveWP.append(createMSG(att_id,acId,self.__ATT_POINTS[((att_id-2)+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)]))
-                                elif self.__update == "delete_rep":
+                                elif self.__UPDATE == "delete_rep":
                                     self.__moveWP.append(createMSG(att_id,acId,Point(0,0)))
-                                elif self.__update == "all_rep":
+                                elif self.__UPDATE == "all_rep":
                                     for idx,attID in enumerate(self.__ATT_IDS): 
                                         self.__moveWP.append(createMSG(attID,acId,self.__ATT_POINTS[(idx*self.__epoche)%len(self.__ATT_POINTS)]))
                                     for idx,repID in enumerate(self.__REP_IDS): 
                                         self.__moveWP.append(createMSG(repID,acId,self.__REP_POINTS[(idx*self.__epoche)%len(self.__REP_POINTS)]))
-                                elif self.__update == "single_rep":
+                                elif self.__UPDATE == "single_rep":
                                     att_idx = att_id-2
                                     self.__moveWP.append(createMSG(att_id,acId,self.__ATT_POINTS[(att_idx+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)]))
                                     if att_idx in range(len(self.__REP_IDS)):
                                         rep_idx = att_idx 
                                         rep_id = self.__REP_IDS[rep_idx]
                                         self.__moveWP.append(createMSG(rep_id,acId,self.__REP_POINTS[(rep_idx+len(self.__REP_IDS)*self.__epoche)%len(self.__REP_POINTS)]))
-                                elif self.__update == "delete_rep":
+                                elif self.__UPDATE == "delete_rep":
                                     self.__moveWP.append(createMSG(att_id,acId,Point(0,0)))
                                     if (att_id-2) in range(len(self.__REP_IDS)):
                                         rep_id = self.__REP_IDS[att_id-2]
                                         self.__moveWP.append(createMSG(rep_id,acId,Point(0,0)))
-                                elif self.__DEBUG: self.__LOGGER.write("Update: %s\n"%self.__update)
-                        self.__LOGGER.write("%d send this valid Goal_Achieved-MSG: %s\n" % (ac_id, recvMsg))
-                        self.__LOGGER.write("%d. Epoche\n" % self.__epoche)
+                                elif self.__DEBUG: self.__LOGGER.write("Update: %s\n"%self.__UPDATE)
+                            self.__LOGGER.write("%d send this valid Goal_Achieved-MSG: %s\n" % (ac_id, recvMsg))
+                            self.__LOGGER.write("%d. Epoche\n" % self.__epoche)
                     elif self.__DEBUG: self.__LOGGER.write("ATT_ID: %d\n"%att_id)
                     self.__MSG_QUEUE.task_done()
 
@@ -285,9 +289,8 @@ class WPMover:
             self.__MSG_SENDING_THREAD.start()
             self.__INTERFACE.subscribe(recv_callback,PprzMessage("telemetry", "GOAL_ACHIEVED"))
             self.__MSG_UPDATE_THREAD.start()
-            while True: 
-                time.sleep(15)
-                if self.__terminate: raise KeyboardInterrupt 
+            while not self.__terminate: time.sleep(15)
+            raise KeyboardInterrupt 
         except: self.__LOGGER.write("... !STOPPING FlightPlan! ...\n")
         finally: raise KeyboardInterrupt
 
