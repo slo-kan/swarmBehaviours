@@ -10,7 +10,7 @@ COPTER_DIR = path.normpath(path.join(SCENARIO_DIR, '../../../../conf/airframes/o
 
 FLIGHT_PLAN_HEADER = '<!DOCTYPE flight_plan SYSTEM "../flight_plan.dtd">\n'+ \
 '<flight_plan alt="47" ground_alt="44" '
-FLIGHT_PLAN_BODY = ' max_dist_from_home="300" name="Rotorcraft Basic (Enac)" security_height="10">\n'+ \
+FLIGHT_PLAN_BODY = ' max_dist_from_home="500" name="Rotorcraft Basic (Enac)" security_height="10">\n'+ \
   '<header>\n'+ \
     '#include "autopilot.h"\n'+ \
   '</header>\n'+ \

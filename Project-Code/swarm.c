@@ -335,7 +335,8 @@ void swarm_follow_wp(void)
     struct EnuCoor_f current_att_point = { 0.0f, 0.0f, 0.0f };
     current_att_point.x = waypoint_get_x(wp_id);
     current_att_point.y = waypoint_get_y(wp_id);
-    attract(own_pos,&current_att_point,&acc, ATTRECTION_MULTIPLIER);
+    if(current_att_point.x != 0.0f && current_att_point.y != 0.0f)
+      attract(own_pos,&current_att_point,&acc, ATTRECTION_MULTIPLIER);
   }
 
   for(uint8_t wp_id = FIRST_REPELL_POINT_ID; wp_id < LAST_REPELL_POINT_ID; ++wp_id)
@@ -343,7 +344,8 @@ void swarm_follow_wp(void)
     struct EnuCoor_f current_rep_point = { 0.0f, 0.0f, 0.0f };
     current_rep_point.x = waypoint_get_x(wp_id);
     current_rep_point.y = waypoint_get_y(wp_id);
-    repulse(own_pos,&current_rep_point,&acc, REGION_SIZE, REPULSION_MULTIPLIER);
+    if(current_rep_point.x != 0.0f && current_rep_point.y != 0.0f)
+      repulse(own_pos,&current_rep_point,&acc, REGION_SIZE, REPULSION_MULTIPLIER);
   }
 
   struct EnuCoor_f* vel = acInfoGetVelocityEnu_f(AC_ID);
