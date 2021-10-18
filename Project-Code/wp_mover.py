@@ -16,7 +16,6 @@ from pprzlink.ivy import IvyMessagesInterface
 from pprzlink.message import PprzMessage
 
 
-
 #####################
 # Class Definitions #
 #####################
@@ -122,7 +121,7 @@ def createMSG(wp_id:int,ac_id:int,point:Point)->"PprzMessage":
 #Input Function
 #scan file to create flight plan
 def get_szenario(filename)->"tuple[list[Point]]":
-    att_points,rep_points = ([],[])
+    att_points,rep_points,spawn_points = ([],[],[])
     atts, reps = (0,0)
     file = open((DIR+"/"+filename),"r")
     lines = file.readlines()
@@ -140,7 +139,9 @@ def get_szenario(filename)->"tuple[list[Point]]":
             att_points.append(Point((float(data[0])*math.pi/180),(float(data[1])*math.pi/180)))
         elif data[-1].strip() == "rep":
             rep_points.append(Point((float(data[0])*math.pi/180),(float(data[1])*math.pi/180)))
-    return (att_points,rep_points,atts,reps,update)
+        elif data[-1].strip() == "spawn":
+            spawn_points.append(Point((float(data[0])*math.pi/180),(float(data[1])*math.pi/180)))
+    return (att_points,rep_points,spawn_points,atts,reps,update)
 
 
 
@@ -161,16 +162,18 @@ class WPMover:
 
 
     #init the WP-Mover tool
-    def __init__(self,fname:str,start_id:int,end_id:int,att_ids:"list[int]",rep_ids:"list[int]",atts:"list[Point]",reps:"list[Point]",update_type:str,Debug:bool=False):
+    def __init__(self,fname:str,start_id:int,end_id:int,first_att_id:int,att_ids:"list[int]",rep_ids:"list[int]",atts:"list[Point]",reps:"list[Point]",spawns:"list[Point]",update_type:str,Debug:bool=False):
         self.__LOG:str = fname
         self.__DEBUG:bool = Debug
         self.__UPDATE:str = update_type
+        self.__FIRST_ATT_ID:int = first_att_id
         self.__ATT_IDS:"list[int]" = att_ids
         self.__REP_IDS:"list[int]" = rep_ids
         self.__END_ID:int = end_id      #end_id is exclusiv 40 means last copter in the swarm has id 39
         self.__START_ID:int = start_id  #start_id is inclusiv 30 means last copter in the swarm has id 30
         self.__ATT_POINTS:"list[Point]" = atts
         self.__REP_POINTS:"list[Point]" = reps
+        self.__SPAWN_POINTS:"list[Point]" = spawns
         self.__INTERFACE = IvyMessagesInterface(
                                agent_name="Pprzlink_Move_WP",      # Ivy agent name
                                start_ivy=False,                    # Do not start the ivy bus now
@@ -242,31 +245,26 @@ class WPMover:
                             self.__epoche += 1
                             self.__moveWP = []
                             for acId in range(self.__START_ID, self.__END_ID):
-                                if self.__UPDATE == "all":
+                                if "all" in self.__UPDATE:
                                     for idx,attID in enumerate(self.__ATT_IDS): 
-                                        self.__moveWP.append(createMSG(attID,acId,self.__ATT_POINTS[(idx*self.__epoche)%len(self.__ATT_POINTS)]))
-                                elif self.__UPDATE == "single":
-                                    self.__moveWP.append(createMSG(att_id,acId,self.__ATT_POINTS[((att_id-2)+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)]))
-                                elif self.__UPDATE == "delete":
-                                    self.__moveWP.append(createMSG(att_id,acId,Point(0,0)))
-                                elif self.__UPDATE == "all_rep":
-                                    for idx,attID in enumerate(self.__ATT_IDS): 
-                                        self.__moveWP.append(createMSG(attID,acId,self.__ATT_POINTS[(idx*self.__epoche)%len(self.__ATT_POINTS)]))
-                                    for idx,repID in enumerate(self.__REP_IDS): 
-                                        self.__moveWP.append(createMSG(repID,acId,self.__REP_POINTS[(idx*self.__epoche)%len(self.__REP_POINTS)]))
-                                elif self.__UPDATE == "single_rep":
-                                    att_idx = att_id-2
-                                    self.__moveWP.append(createMSG(att_id,acId,self.__ATT_POINTS[(att_idx+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)]))
-                                    if att_idx in range(len(self.__REP_IDS)):
-                                        rep_idx = att_idx 
-                                        rep_id = self.__REP_IDS[rep_idx]
-                                        self.__moveWP.append(createMSG(rep_id,acId,self.__REP_POINTS[(rep_idx+len(self.__REP_IDS)*self.__epoche)%len(self.__REP_POINTS)]))
-                                elif self.__UPDATE == "delete_rep":
-                                    self.__moveWP.append(createMSG(att_id,acId,Point(0,0)))
-                                    if (att_id-2) in range(len(self.__REP_IDS)):
-                                        rep_id = self.__REP_IDS[att_id-2]
-                                        self.__moveWP.append(createMSG(rep_id,acId,Point(0,0)))
-                                elif self.__DEBUG: self.__LOGGER.write("Update: %s\n"%self.__UPDATE)
+                                        self.__moveWP.append(createMSG(attID,acId,self.__ATT_POINTS[(idx+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)]))
+                                    if self.__UPDATE == "all_rep":
+                                        for idx,repID in enumerate(self.__REP_IDS): 
+                                            self.__moveWP.append(createMSG(repID,acId,self.__REP_POINTS[(idx+len(self.__REP_IDS)*self.__epoche)%len(self.__REP_POINTS)]))
+                                else: 
+                                    idx = att_id-self.__FIRST_ATT_ID
+                                    if "single" in self.__UPDATE:
+                                        self.__moveWP.append(createMSG(att_id,acId,self.__ATT_POINTS[(idx+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)]))
+                                        if self.__UPDATE == "single_rep" and idx in range(len(self.__REP_IDS)):
+                                            rep_id = self.__REP_IDS[idx]
+                                            self.__moveWP.append(createMSG(rep_id,acId,self.__REP_POINTS[(idx+len(self.__REP_IDS)*self.__epoche)%len(self.__REP_POINTS)]))
+                                    elif "delete" in self.__UPDATE:
+                                        self.__moveWP.append(createMSG(att_id,acId,self.__SPAWN_POINTS[(acId-self.__START_ID)]))
+                                        if self.__UPDATE == "delete_rep":
+                                            if idx in range(len(self.__REP_IDS)):
+                                                rep_id = self.__REP_IDS[idx]
+                                                self.__moveWP.append(createMSG(rep_id,acId,self.__SPAWN_POINTS[(acId-self.__START_ID)]))
+                                    elif self.__DEBUG: self.__LOGGER.write("Update: %s\n"%self.__UPDATE)
                             self.__LOGGER.write("%d send this valid Goal_Achieved-MSG: %s\n" % (ac_id, recvMsg))
                             self.__LOGGER.write("%d. Epoche\n" % self.__epoche)
                     elif self.__DEBUG: self.__LOGGER.write("ATT_ID: %d\n"%att_id)
@@ -298,20 +296,29 @@ class WPMover:
 
 
 #main program
-if __name__=='__main__':
+if __name__=='__main__': 
     if len(sys.argv)==4:
+        # global ćonstants
+        #DIR is holds the directory path where this file is placed
+        FIRST_ATT_ID:int = 2 #this value influences behaviour across multiple files please be sure to change it everywhere if you change it here
+        LOG_NAME:str = DIR+"/WP_Mover.log" #log-file name
+
+        #scan in needed constants from command line arguments and the file 
         FILE_NAME:str = sys.argv[3].strip("/")
         LAST_SWARM_AC_ID :int = int(sys.argv[2]) #id is exclusiv 40 means last copter in the swarm has id 39
         FIRST_SWARM_AC_ID:int = int(sys.argv[1]) #id is inclusiv 30 means first copter in the swarm has id 30
-        ATT_POINTS, REP_POINTS, ATT_RANGE, REP_RANGE, UPDATE = get_szenario(FILE_NAME)
-        ATT_IDS, REP_IDS = (list(range(2,ATT_RANGE+2)),list(range(ATT_RANGE+2,ATT_RANGE+2+REP_RANGE)))
-        LOG_NAME:str = DIR+"/WP_Mover.log"
+        ATT_POINTS, REP_POINTS, SPAWN_POINTS, ATT_RANGE, REP_RANGE, UPDATE = get_szenario(FILE_NAME)
+        ATT_IDS, REP_IDS = (list(range(FIRST_ATT_ID,ATT_RANGE+FIRST_ATT_ID)),list(range(ATT_RANGE+FIRST_ATT_ID,ATT_RANGE+FIRST_ATT_ID+REP_RANGE)))
+
+        #create log-file
         with open(LOG_NAME,"w") as log: 
             log.write("Start FlightPlan...\n")
             log.write("ATTS: "+str(ATT_POINTS)+", REPS: "+str(REP_POINTS)+"\n")
             log.write("ATT_IDS: "+str(ATT_IDS)+", REP_IDS: "+str(REP_IDS)+"\n")
+        
+        #start program
         time.sleep(3)
-        wp_mover:WPMover = WPMover(LOG_NAME,FIRST_SWARM_AC_ID,LAST_SWARM_AC_ID,ATT_IDS,REP_IDS,ATT_POINTS,REP_POINTS,UPDATE)
+        wp_mover:WPMover = WPMover(LOG_NAME,FIRST_SWARM_AC_ID,LAST_SWARM_AC_ID,FIRST_ATT_ID,ATT_IDS,REP_IDS,ATT_POINTS,REP_POINTS,SPAWN_POINTS,UPDATE)
         try: wp_mover.run()
         except: wp_mover.terminate()
         finally: 
