@@ -133,7 +133,7 @@ def get_szenario(filename)->"tuple[list[Point]]":
             reps = int(val.strip().split(":")[-1])
         elif val.strip().split(":")[0]=="update":
             update = val.strip().split(":")[-1].strip()
-    for line in lines[3:]:
+    for line in lines[2:]:
         data = line.strip().split(",")
         if data[-1].strip() == "att":
             att_points.append(Point((float(data[0])*math.pi/180),(float(data[1])*math.pi/180)))
@@ -313,8 +313,10 @@ if __name__=='__main__':
         #create log-file
         with open(LOG_NAME,"w") as log: 
             log.write("Start FlightPlan...\n")
-            log.write("ATTS: "+str(ATT_POINTS)+", REPS: "+str(REP_POINTS)+"\n")
             log.write("ATT_IDS: "+str(ATT_IDS)+", REP_IDS: "+str(REP_IDS)+"\n")
+            log.write("ATT_POINTS: "+str(len(ATT_POINTS))+", ATTS: "+str(ATT_POINTS)+"\n")
+            log.write("REP_POINTS: "+str(len(REP_POINTS))+", REPS: "+str(REP_POINTS)+"\n")
+            log.write("SPAWN_POINTS: "+str(len(SPAWN_POINTS))+", SPAWNS: "+str(SPAWN_POINTS)+"\n")
         
         #start program
         time.sleep(3)

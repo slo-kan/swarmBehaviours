@@ -61,6 +61,7 @@ def setup_flight_plans(file_name:str):
       for ac_id,coords in enumerate(lines[2:]):
         tree = Parser.parse((FLIGHT_PLAN_DIR+("/member%d.xml"%ac_id)))
         root = tree.getroot()
+        coords = coords.split(",")
         root.set("lat0", coords[0].strip())
         root.set("lon0", coords[1].strip())
         waypoints = root.find("waypoints")
