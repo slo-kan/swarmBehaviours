@@ -1,11 +1,12 @@
-class Particle {
-  PVector pos;
+class Drone {
   ArrayList<PVector> prev;
+  PVector pos;
   PVector vel;
   PVector acc;
-  float G = 98;
+  float G = 1.98;
 
-  Particle(float x, float y) {
+  Drone(float x, float y) 
+  {
     pos = new PVector(x, y);
     prev = new ArrayList<PVector>();
     prev.add(new PVector(x, y));
@@ -16,7 +17,8 @@ class Particle {
     acc = new PVector();
   }
 
-  void update() {
+  void update() 
+  {
     vel.add(acc);
     vel.limit(5);
     pos.add(vel);
@@ -24,7 +26,8 @@ class Particle {
   }
  
 
-  void show() {
+  void show() 
+  {
     stroke(255, 255);
     strokeWeight(6);
     point(this.pos.x, this.pos.y);
@@ -44,8 +47,8 @@ class Particle {
   }
 
 
-  void primitive_attraction(PVector target, float perlimiter, int multiplier) {
-    // PVector dir = target - pos
+  void primitive_attraction(PVector target, float perlimiter, int multiplier) 
+  {
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     d = constrain(d, 1, 25);
@@ -59,7 +62,6 @@ class Particle {
   
   void primitive_repulsion(PVector target, float perlimiter, int multiplier)
   {
-    // PVector dir = target - pos
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     d = constrain(d, 1, 25);
@@ -71,8 +73,8 @@ class Particle {
     }
   }
   
-  void linear_attraction(PVector target, int multiplier) {
-    // PVector dir = target - pos
+  void linear_attraction(PVector target, int multiplier) 
+  {
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     float strength = G*multiplier; 
@@ -82,7 +84,6 @@ class Particle {
   
   void complexExponential_repulsion(PVector target, float perlimiter, int a, int b)
   {
-    // PVector dir = target - pos
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     float c = (perlimiter*perlimiter) * (float)Math.log(b/a);
@@ -91,8 +92,8 @@ class Particle {
     acc.sub(force);
   }
   
-  void comfy_attraction(PVector target, float perlimiter, int multiplier) {
-    // PVector dir = target - pos
+  void comfy_attraction(PVector target, float perlimiter, int multiplier) 
+  {
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     float strength = (G*multiplier) * (d-perlimiter)/max(d,0.01f); 
@@ -102,7 +103,6 @@ class Particle {
   
   void simpleExponential_repulsion(PVector target, float perlimiter, int multiplier)
   {
-    // PVector dir = target - pos
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     float strength = (G*multiplier) * (float)Math.exp(-(d*d)/(2*perlimiter*perlimiter));
