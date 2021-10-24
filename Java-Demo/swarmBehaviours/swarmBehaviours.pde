@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 
 ArrayList<Drone> drones = new ArrayList<Drone>();
-AttRep_Behavior behavior;
+ConSteer_Behavior behavior;
 int ticks = 0;
 
 void setup() 
@@ -9,9 +9,9 @@ void setup()
   size(1200, 800);
   
   for(int it=0; it<100; ++it)
-    drones.add(new Drone(random(width), random(height)));
+    drones.add(new Drone(random(width), random(height),8));
   
-  behavior = new AttRep_Behavior(drones);
+  behavior = new ConSteer_Behavior(drones,8);
   behavior.setup();
 }
 
@@ -24,7 +24,7 @@ void draw()
 {
   background(51);
   
-  if(ticks==112)
+  if(ticks==448)
   {
     ticks = 0;
     behavior.update();
@@ -37,7 +37,8 @@ void draw()
   for(Drone drone:drones) 
   {
     //beahvior.primitive_attRep(drone);
-    behavior.advanced_attRep(drone);
+    //behavior.advanced_attRep(drone);
+    behavior.conSteer(drone);
     
     drone.update();
     drone.show();
