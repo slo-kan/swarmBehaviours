@@ -39,7 +39,7 @@ class AttRep_Behavior
     for (PVector attractor:this.attractors)
       point(attractor.x, attractor.y);
       
-    stroke(0, 0, 255);
+    stroke(255, 0, 0);
     strokeWeight(8);
     for (PVector repellPoint:this.repellPoints)
       point(repellPoint.x, repellPoint.y);

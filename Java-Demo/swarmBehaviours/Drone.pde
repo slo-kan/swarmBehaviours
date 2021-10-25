@@ -13,7 +13,7 @@ class Drone {
   final int GOALS = 0;
   final int DANGERS = 1;
   final int MEMBERS = 2;
-  final float MAX_SPEED = 0.5;
+  final float MAX_SPEED = 3;
 
   Drone(float x, float y) 
   {
@@ -32,8 +32,7 @@ class Drone {
     this.prev = new ArrayList<PVector>();
     this.prev.add(new PVector(x, y));
     
-    this.vel = PVector.random2D();
-    this.vel.setMag(random(0, 3));
+    this.vel = new PVector();
     this.acc = new PVector();
 
     this.DIRECTIONS = directions;
@@ -87,13 +86,13 @@ class Drone {
   void create_context_segment(int dir, ArrayList<PVector> goals, ArrayList<PVector> noFlyZone, ArrayList<PVector> members)
   {
     PVector force = new PVector();
-    for(PVector goal:goals) force = force.add(inverse_gausain_attraction(goal));
+    for(PVector goal:goals) force = force.add(invGausain_Attraction(goal));
     this.contextMaps.get(GOALS).set(dir,force.copy());
     force = new PVector();
-    for(PVector member:members) force = force.add(gausain_attraction(member));
+    for(PVector member:members) force = force.add(gausain_AttRep(member));
     this.contextMaps.get(MEMBERS).set(dir,force.copy());
     force = new PVector();
-    for(PVector danger:noFlyZone) force = force.add(limited_repulsion(danger));
+    for(PVector danger:noFlyZone) force = force.add(limExp_Repulsion(danger));
     this.contextMaps.get(DANGERS).set(dir,force.copy());
   }
 
@@ -103,11 +102,15 @@ class Drone {
     for(int idx=0; idx<this.DIRECTIONS; ++idx)
     {
       PVector force = new PVector();
-      force = this.contextMaps.get(GOALS).get(idx).mult(10).add(this.contextMaps.get(MEMBERS).get(idx)).add(this.contextMaps.get(DANGERS).get(idx).mult(30));
-      if(this.prevForce.mag()!=0)
+      force = this.contextMaps.get(GOALS).get(idx).mult(2);
+      force = force.add(this.contextMaps.get(MEMBERS).get(idx)).mult(1);
+      force = force.add(this.contextMaps.get(DANGERS).get(idx).mult(1));
+      float cosSim = this.RAY_DIRS.get(idx).dot(force)/(this.RAY_DIRS.get(idx).mag()*force.mag());
+      if(cosSim < 0) force = new PVector();
+      else if(this.prevForce.mag()!=0)
       { 
-        float cosSim = this.RAY_DIRS.get(idx).dot(this.prevForce)/(this.RAY_DIRS.get(idx).mag()*this.prevForce.mag());
-        if(cosSim < 0) force = force.mult(cosSim+1.5);
+        cosSim = this.RAY_DIRS.get(idx).dot(this.prevForce)/(this.RAY_DIRS.get(idx).mag()*this.prevForce.mag());
+        if(cosSim < 0) force = force.mult(map(cosSim,-1.0,0.0,0.5,1.0));
       }
       forces.add(force);
     }
@@ -139,40 +142,41 @@ class Drone {
     this.acc.add(force);
   }
 
-  PVector limited_repulsion(PVector target)
+  PVector limExp_Repulsion(PVector target)
   {
-    final float LIMIT = 20;
+    final float LIMIT = 40;
     final float SIGMA = 3.85;
 
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     float strength;
-    d = constrain(d, 0, 2*LIMIT);
-    if (d>(LIMIT-5)) strength = G * (5*log(d)-(LIMIT-1.5))/3.85;
-    else {
-      d = constrain(d, 0, LIMIT);
-      strength = G * (d - LIMIT) / SIGMA;
-    }
-    force.setMag(strength);
+    d = constrain(d, 0, LIMIT);
+    if (d<11) strength = G * (0.5*d - LIMIT) / SIGMA;
+    else strength = -1*exp(-1*(G * ((LIMIT/8)*log(d) - (LIMIT/2-1.5))/SIGMA));
+    force = force.normalize();
+    force = force.mult(strength);
     return force;
   }
 
-  PVector gausain_attraction(PVector target)
+  PVector gausain_AttRep(PVector target)
   {
     final float LIMIT = 30;
-    final float SIGMA = 4.7;
-    final float MEAN = LIMIT/2;
+    final float SIGMA = 7.219;
+    final float MEAN = 7.5;
 
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
-    d = constrain(d, 0.5, LIMIT);
-    float tanh_gauss = (float)(Math.tanh(exp(sq(d-MEAN)/(2*sq(SIGMA)))/(SIGMA*sqrt(TWO_PI)))*7);
-    float strength = (G * tanh_gauss * d) / LIMIT - 0.5;
-    force.setMag(strength);
+    d = constrain(d, 0, LIMIT);
+    float strength;
+    if(d<5) strength = G*(d-5); //rep_close
+    else if(d<14.5) strength = G*(2*d-sq(d)/10-MEAN); //att_mid
+    else strength = exp(G *(SIGMA-d/2)); //att_far
+    force = force.normalize();
+    force = force.mult(strength);
     return force;
   }
   
-  PVector inverse_gausain_attraction(PVector target)
+  PVector invGausain_Attraction(PVector target)
   {
     final float LIMIT = 30;
     final float SIGMA = 5;
@@ -181,9 +185,11 @@ class Drone {
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
     d = constrain(d, 0.5, LIMIT);
-    float tanh_inverted_gauss = (float)(Math.tanh(exp(sq(d-MEAN)/(2*sq(SIGMA)))/(SIGMA*sqrt(TWO_PI)))*10+0.75);
-    float strength = (G * tanh_inverted_gauss) / (LIMIT/10) - (sq(d)+360)/(4*LIMIT);
-    force.setMag(strength);
+    float tanh_inv_gauss = (float)(Math.tanh(exp(sq(d-MEAN)/(2*sq(SIGMA)))/(SIGMA*sqrt(TWO_PI)))*10-0.25);
+    float quad_eq = sq(d)-(MEAN*d)-LIMIT;
+    float strength = (MEAN/10)*((G * tanh_inv_gauss) / (LIMIT/10) - quad_eq / (4*LIMIT))-(MEAN/100);
+    force = force.normalize();
+    force = force.mult(strength);
     return force;
   }
 
