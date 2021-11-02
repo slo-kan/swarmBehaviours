@@ -2,10 +2,21 @@ import matplotlib.pyplot as plt
 import sys, getopt, math
 
 # standard constant values
-GRAVITY = 1.985
-MULTIPLIER = 2.5
-COMFY_DISTANCE = 5.25
-PERLIMITER = 2.5
+GRAVITY = 1.985              
+#LINEAR_MULTIPLIER = 0.8      
+#COMFY_MULTIPLIER = 1.25      
+#SIMP_EXP_MULTIPLIER = 3.0    
+#COMP_EXP_MULTIPLIER = 1.5    
+#COMFY_DISTANCE = 17         
+#PERLIMITER = 6.425           
+
+# Att_Rep scaled bei 1/20
+LINEAR_MULTIPLIER = 0.4      
+COMFY_MULTIPLIER = 0.15
+SIMP_EXP_MULTIPLIER = 8.75
+COMP_EXP_MULTIPLIER = 0.75
+COMFY_DISTANCE = 0.85
+PERLIMITER = 3.2125
 
 
 def linAtt_compExpRep(ka,kb,r,x):
@@ -20,44 +31,74 @@ def comfyAtt_compExpRep(ka,kb,r,d,x):
     return (-x)*((-ka*(abs(x)-d)/max(abs(x),0.01))-(kb*math.exp(-(x*x)/c)))
 
 def comfyAtt_simExpRep(ka,kb,r,d,x):
-    return (-x)*((-ka*(abs(x)-d)/max(abs(x),0.01))-(kb*math.exp(-(x*x)/(2*r*r))))                    
+    return (-x)*((-ka*(abs(x)-d)/max(abs(x),0.01))-(kb*math.exp(-(x*x)/(2*r*r))))   
+
+def linAtt(ka,x):
+    return (-x)*(-ka)
+
+def simpExpRep(ka,r,x):
+    return (-x)*(-ka)*math.exp(-(x*x)/(2*r*r))            
                     
 
 # command line argument  
 def main(argv):
-   (g,m,d,r) = (None,None,None,None)
+   (g,lm,cm,em,eb,d,r) = (None,None,None,None,None,None,None)
    try:
-      opts, args = getopt.getopt(argv,"hg:m:d:r:",["help","gravity=","multiplier=","comfy_dist=","perlimiter"])
+      opts, args = getopt.getopt(argv,"hg:l:c:e:b:d:r:",["help","gravity=","linear_mult=","comfy_mult=","simp_exp_mult=","comp_exp_mult=","comfy_dist=","perlimiter"])
       for opt, arg in opts:
           if opt in ("-h", "--help"):
-             print('testParameters.py -g <GRAVITY> -m <MULTIPLIER> -d <COMFY_DISTANCE> -r <PERLIMITER>')
+             print('testParameters.py -g <GRAVITY> -l <MULTIPLIER> -c <MULTIPLIER> -e <MULTIPLIER> -b <MULTIPLIER> -d <COMFY_DISTANCE> -r <PERLIMITER>')
              sys.exit()
           elif opt in ("-g", "--gravity"):
              g = float(arg)
-          elif opt in ("-m", "--multiplier"):
-             m = float(arg)
+          elif opt in ("-l", "--linear_mult"):
+             lm = float(arg)
+          elif opt in ("-c", "--comfy_mult"):
+             cm = float(arg)
+          elif opt in ("-e", "--simp_exp_mult"):
+             em = float(arg)
+          elif opt in ("-b", "--comp_exp_mult"):
+             eb = float(arg)
           elif opt in ("-d", "--comfy_dist"):
              d = float(arg)
           elif opt in ("-r", "--perlimiter"):
              r = float(arg)
    except getopt.GetoptError:
-      print('testParameters.py -g <GRAVITY> -m <MULTIPLIER> -d <COMFY_DISTANCE> -r <PERLIMITER>')
+      print('testParameters.py -g <GRAVITY> -l <MULTIPLIER> -c <MULTIPLIER> -e <MULTIPLIER> -b <MULTIPLIER> -d <COMFY_DISTANCE> -r <PERLIMITER>')
       sys.exit(2)
 
    # user input if no argument line arguments
-   if(not(g and m and d and r)): print('Manual value assignment skip through with enter key for standard values!')
+   if(not(g and lm and cm and em and eb and d and r)): print('Manual value assignment skip through with enter key for standard values!')
    if(not(g)):
        try:
            num = float(input("Enter value for GRAVITY: "))
            g = num
        except:
            g = GRAVITY
-   if(not(m)):
+   if(not(lm)):
        try:
-           num = float(input("Enter value for MULTIPLIER: "))
-           m = num
+           num = float(input("Enter value for LINEAR_MULTIPLIER: "))
+           lm = num
        except:
-           m = MULTIPLIER
+           lm = LINEAR_MULTIPLIER
+   if(not(cm)):
+       try:
+           num = float(input("Enter value for COMFORTABLE_DISTANCE_MULTIPLIER: "))
+           cm = num
+       except:
+           cm = COMFY_MULTIPLIER
+   if(not(em)):
+       try:
+           num = float(input("Enter value for SIMPLE_EXPONANTIAL_MULTIPLIER: "))
+           em = num
+       except:
+           em = SIMP_EXP_MULTIPLIER
+   if(not(eb)):
+       try:
+           num = float(input("Enter value for COMPLEX_EXPONANTIAL_MULTIPLIER: "))
+           eb = num
+       except:
+           eb = COMP_EXP_MULTIPLIER
    if(not(d)):
        try:
            num = float(input("Enter value for COMFY_DISTANCE: "))
@@ -73,18 +114,22 @@ def main(argv):
     
 
    # calculate with formulars and some nicely chosen distance values
-   ka = g
-   kb = g*m
+   linMult = g*lm
+   comfyMult = g*cm
+   simExpMult = g*em
+   comExpMult = g*eb
 
    fives = []
    for num in range(-10,10): fives.append(num/2)
    distances = [*range(-30,-10,2),*range(-10,-5,1),*fives,*range(5,10,1),*range(10,30,2)]
-   (y1,y2,y3,y4) = ([],[],[],[])
+   (y1,y2,y3,y4,y5,y6) = ([],[],[],[],[],[])
    for x in distances:
-       y1.append(linAtt_compExpRep(ka,kb,r,x))
-       y2.append(linAtt_simExpRep(ka,kb,r,x))
-       y3.append(comfyAtt_compExpRep(ka,kb,r,d,x))
-       y4.append(comfyAtt_simExpRep(ka,kb,r,d,x))
+       y1.append(linAtt_compExpRep(linMult,comExpMult,r,x))
+       y2.append(linAtt_simExpRep(linMult,simExpMult,r,x))
+       y3.append(comfyAtt_compExpRep(comfyMult,comExpMult,r,d,x))
+       y4.append(comfyAtt_simExpRep(comfyMult,simExpMult,r,d,x))
+       y5.append(linAtt(linMult,x))
+       y6.append(simpExpRep(simExpMult,r,x))
 
    # plot force distance graph
    fig = plt.figure(1)
@@ -110,6 +155,14 @@ def main(argv):
    plt.plot(distances, y3, 'tab:orange')
    plt.plot(distances, y4, 'tab:red')
    plt.legend(["linAtt_compExpRep","linAtt_simExpRep","comfyAtt_compExpRep","comfyAtt_simExpRep"])
+
+   fig = plt.figure(3)
+   plt.xlabel('distance')
+   plt.ylabel('force')
+   plt.plot(distances, y5, 'tab:green')
+   plt.plot(distances, y6, 'tab:red')
+   plt.plot(distances, y3, 'tab:blue')
+   plt.legend(["linAtt","simExpRep","comfyAtt_compExpRep"])
    plt.show()
     
 
