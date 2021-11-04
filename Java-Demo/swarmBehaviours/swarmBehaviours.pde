@@ -9,6 +9,7 @@ ArrayList<Drone> drones = new ArrayList<Drone>();
 final int DRONE_COUNT = 100;
 final int DRONE_DIRECTIONS = 8;
 final int MAX_TICKS = 450;
+final int UPDATE_PORTION = 2;
 int ticks = 0;
 
 //switch between the behaviors
@@ -27,6 +28,7 @@ void setup()
   behavior = new ConSteer_Behavior(drones, DRONE_DIRECTIONS);
 
   //takes number of attraction and repulsion objects
+  behavior.setup(1,1);  //for test mode
   //behavior.setup(8,4); //for automatic mode
   //behavior.setup(0,0); //actually manual mode need no setup
 }
@@ -36,14 +38,14 @@ void manual_update()
 { behavior.mousePressed(); }
 
 // for automatic mode
-void auto_update()
+void auto_update(int portion)
 {
   //this block updates the attraction and repulsion objects 
   //automatically after a certain time
   if(ticks==MAX_TICKS)
   {
     ticks = 0;
-    behavior.update();
+    behavior.update(portion);
   }
   ++ticks;
 }
@@ -52,7 +54,7 @@ void draw()
 {
   background(51);
   
-  //auto_update(); //for automatic mode
+  auto_update(UPDATE_PORTION); //for automatic mode
   if(mousePressed) manual_update(); //for manual mode 
   behavior.draw();
   

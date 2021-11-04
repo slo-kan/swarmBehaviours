@@ -15,35 +15,42 @@ class AttRep_Behavior
   void setup(int ATTs,int REPs)
   {
     for(int it = 0; it < ATTs; ++it)
-        this.attractors.add(new PVector(random(width), random(height)));
+        this.attractors.add(new PVector(random(width-4), random(height-4)));
     
     for(int it = 0; it < REPs; ++it)
-      this.repellPoints.add(new PVector(random(width), random(height)));
+      this.repellPoints.add(new PVector(random(width-4), random(height-4)));
   }
 
   //manually add attraction or repulsion points
   void mousePressed()
   { 
-    if(mouseButton==LEFT) this.attractors.add(new PVector(mouseX, mouseY)); 
-    else if(mouseButton==RIGHT) this.repellPoints.add(new PVector(mouseX, mouseY));
+    if(mouseButton==LEFT && !keyPressed) this.attractors.add(new PVector(mouseX, mouseY)); 
+    else if(mouseButton==RIGHT && !keyPressed) this.repellPoints.add(new PVector(mouseX, mouseY));
+    else if(mouseButton==LEFT && key == DELETE && !this.attractors.isEmpty()) this.attractors.remove(this.attractors.size()-1); 
+    else if(mouseButton==RIGHT && key == DELETE && !this.repellPoints.isEmpty()) this.repellPoints.remove(this.repellPoints.size()-1); 
   }
   
   //automatically manipulate points
-  void update()
+  void update(int portion)
   {
-    for(int it = 0; it < 8; ++it){
+    for(int it = 0; it < max(this.attractors.size()/portion,1); ++it){
       if(!this.attractors.isEmpty()) this.attractors.remove(0);
-      this.attractors.add(new PVector(random(width), random(height)));
+      this.attractors.add(new PVector(random(width-4), random(height-4)));
     }
-    for(int it = 0; it < 4; ++it){
+    for(int it = 0; it < max(this.repellPoints.size()/portion,1); ++it){
       if(!this.repellPoints.isEmpty()) this.repellPoints.remove(0);
-      this.repellPoints.add(new PVector(random(width), random(height)));
+      this.repellPoints.add(new PVector(random(width-4), random(height-4)));
     }
   }
 
   //draw behavior specific parts
   void draw()
   {
+    for(PVector attractor:this.attractors)
+      for(Drone drone:this.drones)
+        if(drone.pos == attractor)
+          this.attractors.remove(attractor);
+
     stroke(0, 255, 0);
     strokeWeight(8);
     for (PVector attractor:this.attractors)

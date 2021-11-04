@@ -26,11 +26,10 @@ class Drone {
     this.prev = new ArrayList<PVector>();
     this.prev.add(new PVector(x, y));
 
-    /* set random initial velocity
+    //set random initial velocity
     this.vel = PVector.random2D();
-    this.vel.setMag(random(0, MAX_SPEED));
-    */
-    this.vel = new PVector(); //no initial velocity
+    this.vel.setMag(random(0, MAX_SPEED/10));
+    //this.vel = new PVector(); //no initial velocity
     this.acc = new PVector();
 
     //context steering specific initialization
@@ -64,9 +63,18 @@ class Drone {
     acc.mult(0);
   }
 
+  void borders() {
+    while(pos.x<0) pos.x = pos.x+width;
+    while(pos.y<0) pos.y = pos.y+height;
+    while(pos.x>width) pos.x = pos.x-width;
+    while(pos.y>height) pos.y = pos.y-height;
+  }
+
   //processing specific code to draw drones
   void show() 
   {
+    borders();
+
     stroke(255, 255);
     strokeWeight(6);
     point(this.pos.x, this.pos.y);
@@ -109,19 +117,20 @@ class Drone {
     for(int idx=0; idx<this.DIRECTIONS; ++idx)
     {
       PVector force = new PVector();
-      force = this.contextMaps.get(GOALS).get(idx).mult(2);
-      force = force.add(this.contextMaps.get(MEMBERS).get(idx)).mult(1);
-      force = force.add(this.contextMaps.get(DANGERS).get(idx).mult(1));
-      if(cosine_sim(this.RAY_DIRS.get(idx),force) < 0) force = new PVector();
+      force = this.contextMaps.get(GOALS).get(idx).mult(5);
+      force = force.add(this.contextMaps.get(MEMBERS).get(idx)).mult(0.5);
+      force = force.add(this.contextMaps.get(DANGERS).get(idx).mult(2));
+      if(cosine_sim(this.RAY_DIRS.get(idx),force) < 0) force = new PVector(); //to strong danger means no force
       else if(this.prevForce.mag()!=0)
       { 
+        //less likely to switch directions
         float cosSim = cosine_sim(this.RAY_DIRS.get(idx),this.prevForce);
         if(cosSim < 0) force = force.mult(map(cosSim,-1.0,0.0,0.5,1.0));
       }
       forces.add(force);
     }
 
-    //select main force
+    //select strongest force as main force direction
     int maxIdx = 0;
     float maxMag = forces.get(maxIdx).mag();
     for(int idx=1; idx<forces.size(); ++idx) 
@@ -135,7 +144,7 @@ class Drone {
     }
     PVector main_force = this.RAY_DIRS.get(maxIdx).copy().setMag(MAX_SPEED);
 
-    //interpolate with neighbor force
+    //interpolate between main and stronger neighbor force
     int leftIdx = (maxIdx-1 + this.DIRECTIONS)%this.DIRECTIONS;
     int rightIdx = (maxIdx+1 + this.DIRECTIONS)%this.DIRECTIONS;
     float leftMag = forces.get(leftIdx).mag(); 
@@ -180,9 +189,10 @@ class Drone {
     float d = force.mag();
     d = constrain(d, 0, LIMIT);
     float strength;
+    //strength = G*d-10; //simple linear
     if(d<5) strength = G*(d-5); //medium_rep_close
     else if(d<14.5) strength = G*(2*d-sq(d)/10-MEAN); //high_att_mid
-    else strength = exp(G *(SIGMA-d/2)); //low_att_far
+    else strength = exp(G *(SIGMA-d/2)); //low_att_far*/
     force = force.normalize();
     force = force.mult(strength);
     return force;
@@ -198,10 +208,11 @@ class Drone {
 
     PVector force = PVector.sub(target, this.pos);
     float d = force.mag();
-    d = constrain(d, 0.5, LIMIT);
+    d = constrain(d, 0, LIMIT);
     float tanh_inv_gauss = (float)(Math.tanh(exp(sq(d-MEAN)/(2*sq(SIGMA)))/(SIGMA*sqrt(TWO_PI)))*10-0.25);
     float quad_eq = sq(d)-(MEAN*d)-LIMIT;
     float strength = (MEAN/10)*((G * tanh_inv_gauss) / (LIMIT/10) - quad_eq / (4*LIMIT))-(MEAN/100);
+    //float strength = (G/(-3))*d+20; //simple linear
     force = force.normalize();
     force = force.mult(strength);
     return force;
