@@ -10,31 +10,32 @@ GRAVITY = 1.985
 #COMFY_DISTANCE = 17         
 #PERLIMITER = 6.425           
 
-# Att_Rep scaled bei 1/20
-LINEAR_MULTIPLIER = 0.4      
-COMFY_MULTIPLIER = 0.15
-SIMP_EXP_MULTIPLIER = 8.75
-COMP_EXP_MULTIPLIER = 0.75
-COMFY_DISTANCE = 0.85
-PERLIMITER = 3.2125
+# Att_Rep scaled bei 1/10
+LINEAR_MULTIPLIER = 4.4      
+COMFY_MULTIPLIER = 0.3
+SIMP_EXP_MULTIPLIER = 4.4
+COMP_EXP_MULTIPLIER = 1.0
+COMFY_DISTANCE = 4.8
+PERLIMITER = 2.4
 
 
 def linAtt_compExpRep(ka,kb,r,x):
-    c = (r*r)/(math.log(kb/ka))
-    return (-x)*((-ka)-(kb*math.exp(-(x*x)/c)))
+    c = (r*r)/(math.log(10*kb/ka))
+    return (-x)*((-ka/10)-(kb*math.exp(-(x*x)/c)))/2
 
 def linAtt_simExpRep(ka,kb,r,x):
-    return (-x)*((-ka)-(kb*math.exp(-(x*x)/(2*r*r))))
+    return(-x)*((-ka)*(kb*math.exp(-(x*x)/(2*r*r))))/10
 
 def comfyAtt_compExpRep(ka,kb,r,d,x):
     c = (r*r)/(math.log(kb/ka))
     return (-x)*((-ka*(abs(x)-d)/max(abs(x),0.01))-(kb*math.exp(-(x*x)/c)))
 
 def comfyAtt_simExpRep(ka,kb,r,d,x):
-    return (-x)*((-ka*(abs(x)-d)/max(abs(x),0.01))-(kb*math.exp(-(x*x)/(2*r*r))))   
+    return (-x)*((-ka*(abs(x)-d)/max(abs(x),0.01))-(kb*math.exp(-(x*x)/(2*r*r))))
 
 def linAtt(ka,x):
-    return (-x)*(-ka)
+    x = max(1,abs(x))
+    return (-ka)/(-x)
 
 def simpExpRep(ka,r,x):
     return (-x)*(-ka)*math.exp(-(x*x)/(2*r*r))            
@@ -44,7 +45,7 @@ def simpExpRep(ka,r,x):
 def main(argv):
    (g,lm,cm,em,eb,d,r) = (None,None,None,None,None,None,None)
    try:
-      opts, args = getopt.getopt(argv,"hg:l:c:e:b:d:r:",["help","gravity=","linear_mult=","comfy_mult=","simp_exp_mult=","comp_exp_mult=","comfy_dist=","perlimiter"])
+      opts, _ = getopt.getopt(argv,"hg:l:c:e:b:d:r:",["help","gravity=","linear_mult=","comfy_mult=","simp_exp_mult=","comp_exp_mult=","comfy_dist=","perlimiter"])
       for opt, arg in opts:
           if opt in ("-h", "--help"):
              print('testParameters.py -g <GRAVITY> -l <MULTIPLIER> -c <MULTIPLIER> -e <MULTIPLIER> -b <MULTIPLIER> -d <COMFY_DISTANCE> -r <PERLIMITER>')

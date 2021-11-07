@@ -62,32 +62,32 @@
 
 // d parameter
 #ifndef COMFY_DIST
-#define COMFY_DIST 5.25f
+#define COMFY_DIST 4.8f
 #endif
 
 // r parameter
 #ifndef REGION_SIZE
-#define REGION_SIZE 2.5f
+#define REGION_SIZE 2.4f
 #endif
 
 // m parameter -> ka = g * m
 #ifndef ATTRECTION_MULTIPLIER
-#define ATTRECTION_MULTIPLIER 5.0f
+#define ATTRECTION_MULTIPLIER 4.4f
 #endif
 
 // m parameter -> kb = g * m
 #ifndef REPULSION_MULTIPLIER
-#define REPULSION_MULTIPLIER 20.0f
+#define REPULSION_MULTIPLIER 4.4f
 #endif
 
 // m parameter -> ka = g * m
 #ifndef DRONE_ATTRECTION_MULTIPLIER
-#define DRONE_ATTRECTION_MULTIPLIER 1.0f
+#define DRONE_ATTRECTION_MULTIPLIER 0.3f
 #endif
 
 // m parameter -> kb = g * m
 #ifndef DRONE_REPULSION_MULTIPLIER
-#define DRONE_REPULSION_MULTIPLIER 2.5f
+#define DRONE_REPULSION_MULTIPLIER 1.0f
 #endif
 
 // velocity limit parameter
@@ -232,7 +232,8 @@ static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   msg.attraction_d = d;
   msg.attraction = true;
 
-  float strength = GRAVITY * multiplier;
+  d = fmaxf(1.0f,d);
+  float strength = GRAVITY * multiplier/d;
   msg.attraction_strength = strength;
 
   force.x = force.x * strength;

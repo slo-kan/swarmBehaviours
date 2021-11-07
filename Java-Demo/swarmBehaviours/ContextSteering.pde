@@ -15,7 +15,7 @@ class ConSteer_Behavior
           float angle = it * TWO_PI/directions;
           this.RAY_DIRS.add(PVector.fromAngle(angle));
         }
-        this.SECTOR_COS_SIM = cosine_sim(this.RAY_DIRS.get(0),this.RAY_DIRS.get(1))/2;
+        this.SECTOR_COS_SIM = cos((TWO_PI/directions)/2);
     }
 
     //for initial setup of certain number of random goals and dangers
@@ -50,13 +50,26 @@ class ConSteer_Behavior
       }
     }
 
+    //removes visited attraction_points
+    void removeVisited()
+    {
+      ArrayList<PVector> goals_updated = new ArrayList<PVector>();
+      for(PVector goal: this.goals)
+      {
+        PVector current = goal.copy();
+        goals_updated.add(current);
+        for(Drone drone:this.drones)
+          if(floor(drone.pos.x) == floor(goal.x) && 
+             floor(drone.pos.y) == floor(goal.y) )
+            { goals_updated.remove(current); break;}
+      }
+      this.goals = goals_updated;
+    }
+
     //draw behavior specific parts
     void draw()
     {
-      for(PVector goal:this.goals)
-      for(Drone drone:this.drones)
-        if(drone.pos == goal)
-          this.goals.remove(goal);
+      removeVisited();
 
       stroke(0, 255, 0);
       strokeWeight(8);
@@ -80,14 +93,14 @@ class ConSteer_Behavior
         ArrayList<PVector> noFlyZones = new ArrayList<PVector>();
 
         for(PVector goal: this.goals)
-          if(abs(cosine_sim(this.RAY_DIRS.get(idx), goal)) <= this.SECTOR_COS_SIM) 
+          if(cosine_sim(this.RAY_DIRS.get(idx), goal) >= this.SECTOR_COS_SIM) 
             intrests.add(goal);
         for(Drone other: this.drones)
           if(other.pos != drone.pos && 
-            abs(cosine_sim(this.RAY_DIRS.get(idx), other.pos)) <= this.SECTOR_COS_SIM) 
+             cosine_sim(this.RAY_DIRS.get(idx), other.pos) >= this.SECTOR_COS_SIM) 
             members.add(other.pos); 
         for(PVector danger: this.dangers)
-          if(abs(cosine_sim(this.RAY_DIRS.get(idx),danger)) <= this.SECTOR_COS_SIM) 
+          if(cosine_sim(this.RAY_DIRS.get(idx),danger) >= this.SECTOR_COS_SIM) 
             noFlyZones.add(danger); 
 
         drone.create_context_segment(idx, intrests, noFlyZones, members);
