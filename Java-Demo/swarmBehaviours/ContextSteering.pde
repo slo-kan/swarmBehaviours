@@ -15,7 +15,7 @@ class ConSteer_Behavior
           float angle = it * TWO_PI/directions;
           this.RAY_DIRS.add(PVector.fromAngle(angle));
         }
-        this.SECTOR_COS_SIM = cos((TWO_PI/directions)/2);
+        this.SECTOR_COS_SIM = cos(PI/directions);
     }
 
     //for initial setup of certain number of random goals and dangers
@@ -100,7 +100,7 @@ class ConSteer_Behavior
              cosine_sim(this.RAY_DIRS.get(idx), other.pos) >= this.SECTOR_COS_SIM) 
             members.add(other.pos); 
         for(PVector danger: this.dangers)
-          if(cosine_sim(this.RAY_DIRS.get(idx),danger) >= this.SECTOR_COS_SIM) 
+          if(cosine_sim(this.RAY_DIRS.get(idx), danger) >= this.SECTOR_COS_SIM) 
             noFlyZones.add(danger); 
 
         drone.create_context_segment(idx, intrests, noFlyZones, members);
