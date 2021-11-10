@@ -96,9 +96,9 @@ class ConSteer_Behavior
           if(cosine_sim(this.RAY_DIRS.get(idx), goal) >= this.SECTOR_COS_SIM) 
             intrests.add(goal);
         for(Drone other: this.drones)
-          if(other.pos != drone.pos && 
+          if(other.pos.x != drone.pos.x && other.pos.y != drone.pos.y &&
              cosine_sim(this.RAY_DIRS.get(idx), other.pos) >= this.SECTOR_COS_SIM) 
-            members.add(other.pos); 
+            members.add(other.pos.copy()); 
         for(PVector danger: this.dangers)
           if(cosine_sim(this.RAY_DIRS.get(idx), danger) >= this.SECTOR_COS_SIM) 
             noFlyZones.add(danger); 
