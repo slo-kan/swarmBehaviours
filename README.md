@@ -12,6 +12,8 @@ To view the demo coded in Java you need to download an IDE called [Processing](h
 The file [testParameters.py](testParameters.py) is a tool, that helps you determine theoretically good hyperparameters for the different swarm behaviors - of course you should test them and see how they work in the simulation.
 
 We will provide you with a table full of tested parameter values, that we found useful for certain scenarios [here](https://docs.google.com/spreadsheets/d/1f7oobGwC1IyoGmqL4FMu1pZgTXld_xyABqdASK2rQEY/edit?usp=sharing).
+
+We will provide you with the documentation of our project. You can find it [here](https://docs.google.com/document/d/1Zxm6XO_mv9UGmnJGTqNpEARzjIpVfVgE/edit?usp=sharing&ouid=116357388106139717789&rtpof=true&sd=true).
 <br><br><br>
 
 
