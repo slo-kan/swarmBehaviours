@@ -6,7 +6,7 @@ static float cosine_sim(PVector a, PVector b)
 
 //global vars
 ArrayList<Drone> drones = new ArrayList<Drone>();
-final int DRONE_COUNT = 1;
+final int DRONE_COUNT = 10;
 final int DRONE_DIRECTIONS = 8;
 final int MAX_TICKS = 450;
 final int UPDATE_PORTION = 2;
@@ -28,14 +28,21 @@ void setup()
   behavior = new ConSteer_Behavior(drones, DRONE_DIRECTIONS);
 
   //takes number of attraction and repulsion objects
-  behavior.setup(1,1);  //for test mode
-  //behavior.setup(8,4); //for automatic mode
+  //behavior.setup(1,1);  //for test mode
+  behavior.setup(8,4); //for automatic mode
   //behavior.setup(0,0); //actually manual mode need no setup
 }
 
 // for manual mode
-void manual_update()
+void mousePressed()
 { behavior.mousePressed(); }
+
+// for pausing
+void keyPressed()
+{ 
+  if(key==' ' && looping) noLoop(); 
+  else if(key==' ' && !looping) loop();
+}
 
 // for automatic mode
 void auto_update(int portion)
@@ -55,7 +62,6 @@ void draw()
   background(51);
   
   auto_update(UPDATE_PORTION); //for automatic mode
-  if(mousePressed) manual_update(); //for manual mode 
   behavior.draw();
   
   stroke(255);

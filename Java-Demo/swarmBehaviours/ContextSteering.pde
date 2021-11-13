@@ -4,6 +4,7 @@ class ConSteer_Behavior
     ArrayList<PVector> goals = new ArrayList<PVector>();
     ArrayList<PVector> dangers = new ArrayList<PVector>();
     ArrayList<PVector> RAY_DIRS = new ArrayList<PVector>();
+    boolean DEBUG = false;
     float SECTOR_COS_SIM;
 
     //constructor
@@ -80,34 +81,76 @@ class ConSteer_Behavior
       strokeWeight(8);
       for (PVector danger:this.dangers)
         point(danger.x, danger.y);
-    }
+
+      
+      if(this.DEBUG)
+      {
+        for(Drone drone: this.drones)
+        {
+          strokeWeight(2);
+          stroke(212, 243, 107);
+          line(drone.pos.x,drone.pos.y,drone.pos.x+this.RAY_DIRS.get(0).x*10,drone.pos.y+this.RAY_DIRS.get(0).y*10);
+          stroke(112, 243, 107);
+          line(drone.pos.x,drone.pos.y,drone.pos.x+this.RAY_DIRS.get(1).x*10,drone.pos.y+this.RAY_DIRS.get(1).y*10);
+          stroke(107, 243, 212);
+          line(drone.pos.x,drone.pos.y,drone.pos.x+this.RAY_DIRS.get(2).x*10,drone.pos.y+this.RAY_DIRS.get(2).y*10);
+          stroke(107, 212, 243);
+          line(drone.pos.x,drone.pos.y,drone.pos.x+this.RAY_DIRS.get(3).x*10,drone.pos.y+this.RAY_DIRS.get(3).y*10);
+          stroke(107, 121, 243);
+          line(drone.pos.x,drone.pos.y,drone.pos.x+this.RAY_DIRS.get(4).x*10,drone.pos.y+this.RAY_DIRS.get(4).y*10);
+          stroke(212, 107, 243);
+          line(drone.pos.x,drone.pos.y,drone.pos.x+this.RAY_DIRS.get(5).x*10,drone.pos.y+this.RAY_DIRS.get(5).y*10);
+          stroke(243, 107, 212);
+          line(drone.pos.x,drone.pos.y,drone.pos.x+this.RAY_DIRS.get(6).x*10,drone.pos.y+this.RAY_DIRS.get(6).y*10);
+          stroke(243, 212, 107);
+          line(drone.pos.x,drone.pos.y,drone.pos.x+this.RAY_DIRS.get(7).x*10,drone.pos.y+this.RAY_DIRS.get(7).y*10);
+        }
+
+        strokeWeight(2);
+        stroke(212, 243, 107);
+        line(width/2,height/2,width/2+this.RAY_DIRS.get(0).x*50,height/2+this.RAY_DIRS.get(0).y*50);
+        stroke(112, 243, 107);
+        line(width/2,height/2,width/2+this.RAY_DIRS.get(1).x*50,height/2+this.RAY_DIRS.get(1).y*50);
+        stroke(107, 243, 212);
+        line(width/2,height/2,width/2+this.RAY_DIRS.get(2).x*50,height/2+this.RAY_DIRS.get(2).y*50);
+        stroke(107, 212, 243);
+        line(width/2,height/2,width/2+this.RAY_DIRS.get(3).x*50,height/2+this.RAY_DIRS.get(3).y*50);
+        stroke(107, 121, 243);
+        line(width/2,height/2,width/2+this.RAY_DIRS.get(4).x*50,height/2+this.RAY_DIRS.get(4).y*50);
+        stroke(212, 107, 243);
+        line(width/2,height/2,width/2+this.RAY_DIRS.get(5).x*50,height/2+this.RAY_DIRS.get(5).y*50);
+        stroke(243, 107, 212);
+        line(width/2,height/2,width/2+this.RAY_DIRS.get(6).x*50,height/2+this.RAY_DIRS.get(6).y*50);
+        stroke(243, 212, 107);
+        line(width/2,height/2,width/2+this.RAY_DIRS.get(7).x*50,height/2+this.RAY_DIRS.get(7).y*50);
+      }
+    } 
 
     //behavior specific function for each drone
     void conSteer(Drone drone)
     {
       //create all direction segements of each map
-      for(int idx=0; idx<RAY_DIRS.size(); ++idx)
+      for(int idx=0; idx<this.RAY_DIRS.size(); ++idx)
       {
         ArrayList<PVector> intrests = new ArrayList<PVector>();
         ArrayList<PVector> members = new ArrayList<PVector>();
         ArrayList<PVector> noFlyZones = new ArrayList<PVector>();
 
         for(PVector goal: this.goals)
-          if(cosine_sim(this.RAY_DIRS.get(idx), goal) >= this.SECTOR_COS_SIM) 
+          if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(goal,drone.pos)) >= this.SECTOR_COS_SIM) 
             intrests.add(goal);
         for(Drone other: this.drones)
-          if(other.pos.x != drone.pos.x && other.pos.y != drone.pos.y &&
-             cosine_sim(this.RAY_DIRS.get(idx), other.pos) >= this.SECTOR_COS_SIM) 
+          if(other != drone && cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos)) >= this.SECTOR_COS_SIM) 
             members.add(other.pos.copy()); 
         for(PVector danger: this.dangers)
-          if(cosine_sim(this.RAY_DIRS.get(idx), danger) >= this.SECTOR_COS_SIM) 
+          if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
             noFlyZones.add(danger); 
 
         drone.create_context_segment(idx, intrests, noFlyZones, members);
       }
 
       //evaluate context steering behavior
-      drone.context_steering();
+      drone.context_steering(this.RAY_DIRS,this.SECTOR_COS_SIM);
     }
 
 }

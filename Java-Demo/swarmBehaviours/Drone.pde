@@ -5,15 +5,14 @@ class Drone {
   PVector vel;
   PVector acc;
   final float G = 1.98;
-  final float MAX_SPEED = 1;
-  final boolean DEBUG = false;
+  final float MAX_SPEED = 3;
+  final static boolean DEBUG = false;
   
   //context steering specific globals
   ArrayList<ArrayList<PVector>> contextMaps = new ArrayList<ArrayList<PVector>>();
-  ArrayList<PVector> RAY_DIRS = new ArrayList<PVector>();
+  ArrayList<PVector> currentForces = new ArrayList<PVector>();
   PVector prevForce = new PVector();
   int DIRECTIONS;
-  float SECTOR_COS_SIM; 
   final int GOALS = 0;
   final int DANGERS = 1;
   final int MEMBERS = 2;
@@ -36,15 +35,12 @@ class Drone {
 
     //context steering specific initialization
     this.DIRECTIONS = directions;
-    this.SECTOR_COS_SIM = cos(PI/this.DIRECTIONS);
     ArrayList<PVector> goals = new ArrayList<PVector>();
     ArrayList<PVector> members = new ArrayList<PVector>();
     ArrayList<PVector> noFlyZone  = new ArrayList<PVector>();
 
     for(int it=0; it<this.DIRECTIONS; ++it)
     {
-      float angle = it * TWO_PI/this.DIRECTIONS;
-      this.RAY_DIRS.add(PVector.fromAngle(angle));
       goals.add(new PVector());
       noFlyZone.add(new PVector());
       members.add(new PVector());
@@ -85,6 +81,57 @@ class Drone {
 
     if(DEBUG) System.out.println("Drone-Position = ("+this.pos.x+","+this.pos.y+")");
     
+    if(DEBUG) 
+    {
+      stroke(0, 255, 0);
+      for(PVector force: this.currentForces)
+      {
+        strokeWeight(2);
+        line(this.pos.x,this.pos.y,this.pos.x+force.x*MAX_SPEED,this.pos.y+force.y*MAX_SPEED);
+        strokeWeight(4);
+        point(this.pos.x+force.x*MAX_SPEED,this.pos.y+force.y*MAX_SPEED);
+      }
+    }
+
+    if(!DEBUG)
+    {
+      stroke(255, 0, 0);
+      strokeWeight(2);
+      line(this.pos.x,this.pos.y,this.pos.x+this.prevForce.x*10,this.pos.y+this.prevForce.y*10);
+      strokeWeight(4);
+      point(this.pos.x+this.prevForce.x*10,this.pos.y+this.prevForce.y*10);
+    }
+
+    if(!DEBUG) 
+    {
+      stroke(255, 0, 0);
+      for(PVector danger: this.contextMaps.get(DANGERS))
+      {
+        strokeWeight(2);
+        line(this.pos.x,this.pos.y,this.pos.x+danger.x*MAX_SPEED,this.pos.y+danger.y*MAX_SPEED);
+        strokeWeight(4);
+        point(this.pos.x+danger.x*MAX_SPEED,this.pos.y+danger.y*MAX_SPEED);
+      }
+
+      stroke(0, 0, 255);
+      for(PVector member: this.contextMaps.get(MEMBERS))
+      {
+        strokeWeight(2);
+        line(this.pos.x,this.pos.y,this.pos.x+member.x*MAX_SPEED,this.pos.y+member.y*MAX_SPEED);
+        strokeWeight(4);
+        point(this.pos.x+member.x*MAX_SPEED,this.pos.y+member.y*MAX_SPEED);
+      }
+
+      stroke(0, 255, 0);
+      for(PVector goal: this.contextMaps.get(GOALS))
+      {
+        strokeWeight(2);
+        line(this.pos.x,this.pos.y,this.pos.x+goal.x*MAX_SPEED,this.pos.y+goal.y*MAX_SPEED);
+        strokeWeight(4);
+        point(this.pos.x+goal.x*MAX_SPEED,this.pos.y+goal.y*MAX_SPEED);
+      }
+    }
+
     strokeWeight(2);
     stroke(255, 25);
     line(this.pos.x, this.pos.y, 
@@ -101,28 +148,28 @@ class Drone {
 
   //context steering 
   //update direction specific segments of all context maps
-  void create_context_segment(int dir, ArrayList<PVector> goals, ArrayList<PVector> noFlyZone, ArrayList<PVector> members)
+  void create_context_segment(int dir, ArrayList<PVector> goals, ArrayList<PVector> noFlyZones, ArrayList<PVector> members)
   {
     //System.out.println("[Direction = "+dir+"]: "+goals.size()+" Goals & "+noFlyZone.size()+" Dangers & "+members.size()+" Members");
     PVector force = new PVector();
     for(PVector goal:goals) force.add(invGausain_Attraction(goal));
-    this.contextMaps.get(GOALS).set(dir,force.copy());
+    this.contextMaps.get(GOALS).set(dir,PVector.mult(force,1/max(goals.size(),1)));
     force = new PVector();
     for(PVector member:members) force.add(gausain_AttRep(member));
-    this.contextMaps.get(MEMBERS).set(dir,force.copy());
+    this.contextMaps.get(MEMBERS).set(dir,PVector.mult(force,1/max(members.size(),1)));
     force = new PVector();
-    for(PVector danger:noFlyZone) force.add(limExp_Repulsion(danger));
-    this.contextMaps.get(DANGERS).set(dir,force.copy());
+    for(PVector danger:noFlyZones) force.add(limExp_Repulsion(danger));
+    this.contextMaps.get(DANGERS).set(dir,PVector.mult(force,1/max(noFlyZones.size(),1)));
   }
 
   //context steering
   //update acceleration based on context steering behavior
-  void context_steering()
+  void context_steering(ArrayList<PVector> rayDirs, float sectorCosSim)
   {
     if(DEBUG)
     { 
       for(int it=0; it<this.DIRECTIONS; ++it)
-        System.out.print("RayDir["+it+"] = ("+this.RAY_DIRS.get(it).x+","+this.RAY_DIRS.get(it).y+"); ");
+        System.out.print("RayDir["+it+"] = ("+rayDirs.get(it).x+","+rayDirs.get(it).y+"); ");
       System.out.println("End;");
     }
     
@@ -132,18 +179,20 @@ class Drone {
     {
       PVector force = new PVector();
       force.add(this.contextMaps.get(GOALS).get(idx).mult(1));
-      //force.add(this.contextMaps.get(MEMBERS).get(idx).mult(0.5));
-      //force.add(this.contextMaps.get(DANGERS).get(idx).mult(2));
-      if(DEBUG) System.out.println("ContextMap-Goal: ("+force.x+","+force.y+")");
-      if(cosine_sim(this.RAY_DIRS.get(idx),force) < 0) force = new PVector(); //to strong danger means no force
+      force.add(this.contextMaps.get(MEMBERS).get(idx).mult(1));
+      force.add(this.contextMaps.get(DANGERS).get(idx).mult(1));
+      if(DEBUG && force.x!=0 && force.y!=0) System.out.println("Direction: "+idx+"; COS_SIM = "+cosine_sim(rayDirs.get(idx),force)+
+      "; dir("+rayDirs.get(idx).x+","+rayDirs.get(idx).y+"); force("+force.x+","+force.y+")");
+      if(cosine_sim(rayDirs.get(idx),force) < sectorCosSim) force = new PVector(); //to strong danger means no force
       else if(this.prevForce.mag()!=0)
       { 
         //less likely to switch directions
-        float cosSim = cosine_sim(this.RAY_DIRS.get(idx),this.prevForce);
-        if(cosSim < this.SECTOR_COS_SIM) force.mult(1+cosSim/2);
+        float cosSim = cosine_sim(rayDirs.get(idx),this.prevForce);
+        if(cosSim < sectorCosSim) force.mult(map(cosSim,-1.0,sectorCosSim,0.001,0.75));
       }
       forces.add(force.copy());
     }
+    this.currentForces = forces;
 
     //select strongest force as main force direction
     int maxIdx = 0;
@@ -157,7 +206,7 @@ class Drone {
         maxIdx = idx;
       }
     }
-    PVector main_force = PVector.mult(this.RAY_DIRS.get(maxIdx),MAX_SPEED);
+    PVector main_force = PVector.mult(rayDirs.get(maxIdx),MAX_SPEED);
     if(DEBUG) System.out.println("Choosen Direction: "+maxIdx);
 
     PVector force = new PVector();
@@ -172,8 +221,8 @@ class Drone {
       if(DEBUG) System.out.println("neighborIdx = "+neighborIdx);
       if(DEBUG) System.out.println("maxMag: "+maxMag+"; n_mag: "+forces.get(neighborIdx).mag());
       float magnitude = forces.get(neighborIdx).mag()/maxMag;
-      if(DEBUG) System.out.println("direction force("+this.RAY_DIRS.get(neighborIdx).x+","+this.RAY_DIRS.get(neighborIdx).y+"); mag: "+MAX_SPEED*magnitude);
-      PVector secondary_force = PVector.mult(this.RAY_DIRS.get(neighborIdx),MAX_SPEED*magnitude);
+      if(DEBUG) System.out.println("direction force("+rayDirs.get(neighborIdx).x+","+rayDirs.get(neighborIdx).y+"); mag: "+MAX_SPEED*magnitude);
+      PVector secondary_force = PVector.mult(rayDirs.get(neighborIdx),MAX_SPEED*magnitude);
       force.add(secondary_force);
     }
     force.add(main_force);
