@@ -10,6 +10,7 @@ final int DRONE_COUNT = 10;
 final int DRONE_DIRECTIONS = 8;
 final int MAX_TICKS = 450;
 final int UPDATE_PORTION = 2;
+final float PIXEL_METRIC_CONV = 0.06;
 int ticks = 0;
 
 //switch between the behaviors

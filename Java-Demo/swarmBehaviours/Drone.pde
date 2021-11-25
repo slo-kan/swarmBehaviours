@@ -11,6 +11,7 @@ class Drone {
   //context steering specific globals
   ArrayList<ArrayList<PVector>> contextMaps = new ArrayList<ArrayList<PVector>>();
   ArrayList<PVector> currentForces = new ArrayList<PVector>();
+  ArrayList<Boolean> memberMask = new ArrayList<Boolean>();
   PVector prevForce = new PVector();
   final int DIRECTIONS, VISUAL_SCALE = 5;
   final int GOAL_VECTORS = 0;
@@ -46,6 +47,7 @@ class Drone {
       goals.add(new PVector());
       att_members.add(new PVector());
       rep_members.add(new PVector());
+      memberMask.add(true);
       dangers.add(new PVector());
     }
 
@@ -79,7 +81,7 @@ class Drone {
   {
     borders(h,w);
 
-    stroke(255, 255);
+    stroke(255, 255, 255, 255);
     strokeWeight(6);
     point(this.pos.x, this.pos.y);
 
@@ -106,7 +108,7 @@ class Drone {
       point(this.pos.x+this.prevForce.x*VISUAL_SCALE,this.pos.y+this.prevForce.y*VISUAL_SCALE);
     }
 
-    if(!DEBUG) 
+    if(DEBUG) 
     {
       stroke(255, 0, 0);
       for(PVector danger: this.contextMaps.get(DANGER_VECTORS))
@@ -146,7 +148,7 @@ class Drone {
     }
 
     strokeWeight(2);
-    stroke(255, 25);
+    stroke(255,255,255,25);
     line(this.pos.x, this.pos.y, 
     this.prev.get(this.prev.size()-1).x, this.prev.get(this.prev.size()-1).y);
     
@@ -161,32 +163,36 @@ class Drone {
 
   //context steering 
   //update direction specific segments of all context maps
-  void create_context_segment(int dir, ArrayList<PVector> goals, ArrayList<PVector> dangers, ArrayList<PVector> members)
+  void create_context_segment(int dir, ArrayList<PVector> intrest_forces, ArrayList<PVector> danger_forces, ArrayList<PVector> member_atts, ArrayList<PVector> member_reps, ArrayList<Boolean> member_mask)
   {
     PVector strongest_force;
     strongest_force = new PVector();
-    for(PVector goal:goals) 
-      if(strongest_force.mag() < invGausain_Attraction(goal).mag()) 
-        strongest_force = invGausain_Attraction(goal);
+    for(PVector intrest_force:intrest_forces) 
+      if(strongest_force.mag() < intrest_force.mag()) 
+        strongest_force = intrest_force;
     this.contextMaps.get(GOAL_VECTORS).set(dir,strongest_force.copy());
     strongest_force = new PVector();
-    for(PVector danger:dangers) 
-      if(strongest_force.mag() < limExp_Repulsion(danger).mag()) 
-        strongest_force = limExp_Repulsion(danger);
+    for(PVector danger_force:danger_forces) 
+      if(strongest_force.mag() < danger_force.mag()) 
+        strongest_force = danger_force;
     this.contextMaps.get(DANGER_VECTORS).set(dir,strongest_force.copy());
 
-    PVector strongest_att = new PVector();
-    PVector strongest_rep = new PVector();
-    for(PVector member:members) 
-    {
-      PVector force;
-      force = gausain_Attraction(member);
-      if(strongest_att.mag()<force.mag()) strongest_att = force.copy();
-      force = limExp_Repulsion(member);
-      if(strongest_rep.mag()<force.mag()) strongest_rep = force.copy();
-    }
-    this.contextMaps.get(ATT_MEMBER_VECTORS).set(dir,strongest_att.copy());
-    this.contextMaps.get(REP_MEMBER_VECTORS).set(dir,strongest_rep.copy());
+    strongest_force = new PVector();
+    for(PVector member_att:member_atts) 
+      if(strongest_force.mag() < member_att.mag()) 
+        strongest_force = member_att;
+    this.contextMaps.get(ATT_MEMBER_VECTORS).set(dir,strongest_force.copy());
+
+    strongest_force = new PVector();
+    boolean mask_val = true;
+    for(int idx=0; idx<member_reps.size(); ++idx)
+      if(strongest_force.mag() < member_reps.get(idx).mag()) 
+      {
+        strongest_force = member_reps.get(idx);
+        mask_val = member_mask.get(idx); 
+      }
+    this.memberMask.set(dir,mask_val);
+    this.contextMaps.get(REP_MEMBER_VECTORS).set(dir,strongest_force.copy());
   }
 
   //context steering
@@ -199,13 +205,13 @@ class Drone {
     for(int idx=0; idx<this.DIRECTIONS; ++idx)
     {
       PVector force = new PVector();
-      force.add(this.contextMaps.get(GOAL_VECTORS).get(idx).mult(1));
-      force.add(this.contextMaps.get(ATT_MEMBER_VECTORS).get(idx).mult(1));
+      force.add(this.contextMaps.get(GOAL_VECTORS).get(idx).mult(1.5));
+      force.add(this.contextMaps.get(ATT_MEMBER_VECTORS).get(idx).mult(0.5));
       force.add(this.contextMaps.get(REP_MEMBER_VECTORS).get(idx).mult(1));
-      force.add(this.contextMaps.get(DANGER_VECTORS).get(idx).mult(1));
+      force.add(this.contextMaps.get(DANGER_VECTORS).get(idx).mult(2));
       
       //danger based mask
-      if(cosine_sim(rayDirs.get(idx),force) < sectorCosSim) mask.add(false);
+      if((cosine_sim(rayDirs.get(idx),force) < 0.0) || !memberMask.get(idx)) mask.add(false);
       else mask.add(true);
       
       //less likely to switch directions
@@ -234,7 +240,7 @@ class Drone {
       int rightIdx = (maxIdx+1 + this.DIRECTIONS)%this.DIRECTIONS;
       float leftMag = forces.get(leftIdx).mag(); 
       float rightMag = forces.get(rightIdx).mag();
-      int neighborIdx = (leftMag<rightMag && mask.get(rightIdx))?rightIdx:(mask.get(leftIdx))?leftIdx:-1;
+      int neighborIdx = (leftMag<rightMag && mask.get(rightIdx))? rightIdx: (mask.get(leftIdx))? leftIdx: -1;
       if(DEBUG) System.out.println("Neighbor Direction:"+neighborIdx);
       if(neighborIdx>=0)
       {
@@ -251,13 +257,28 @@ class Drone {
   }
 
   //context steering
+  //calculate repulsion forces to other drones
+  PVector linear_Repulsion(PVector target)
+  {
+    final float LIMIT = 30.0f;
+
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
+    float d = force.mag();
+    d = min(d, LIMIT);
+    float strength = (-1/3)*d+10; //simple linear
+    force.normalize();
+    force.mult(strength);
+    return force.copy();
+  }
+
+  //context steering
   //calculate repulsion force from DANGER_VECTORS
   PVector limExp_Repulsion(PVector target)
   {
     final float LIMIT = 40;
     final float SIGMA = 3.85;
 
-    PVector force = PVector.sub(target, this.pos);
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
     float strength;
     d = min(d, LIMIT);
@@ -269,7 +290,7 @@ class Drone {
   }
 
   //context steering
-  //calculate attraction and repulsion forces from other drones
+  //calculate attraction forces to other drones
   PVector gausain_Attraction(PVector target)
   {
     final float LIMIT = 40;
@@ -277,7 +298,7 @@ class Drone {
     final float GAMMA = 6;
     final float MEAN = 20;
 
-    PVector force = PVector.sub(target, this.pos);
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
     d = min(d, LIMIT);
     float strength;
@@ -297,15 +318,16 @@ class Drone {
     final float SIGMA = 5.0f;
     final float MEAN = LIMIT/2;
 
-    PVector force = PVector.sub(target, this.pos);
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
     d = min(d, LIMIT);
   
-    float tanh_inv_gauss = (float)(Math.tanh(exp(sq(d-MEAN)/(2*sq(SIGMA)))/(SIGMA*sqrt(TWO_PI)))*10-0.25);
-    float quad_eq = sq(d)-(MEAN*d)-LIMIT;
-    float strength = (MEAN/10)*((G * tanh_inv_gauss) / (LIMIT/10) - quad_eq / (4*LIMIT))-(MEAN/100);
+    //float tanh_inv_gauss = (float)(Math.tanh(exp(sq(d-MEAN)/(2*sq(SIGMA)))/(SIGMA*sqrt(TWO_PI)))*10-0.25);
+    //float quad_eq = sq(d)-(MEAN*d)-LIMIT;
+    //float strength = (MEAN/10)*((G * tanh_inv_gauss) / (LIMIT/10) - quad_eq / (4*LIMIT))-(MEAN/100);
     
-    //float strength = (G/(-3))*d+20; //simple linear
+    float strength = (G/(-3))*d+20; //simple linear  
+
     force.normalize();
     force.mult(strength);
     return force.copy();
