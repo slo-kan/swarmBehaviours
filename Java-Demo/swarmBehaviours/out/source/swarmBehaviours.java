@@ -340,7 +340,6 @@ class ConSteer_Behavior
         ArrayList<PVector> member_atts = new ArrayList<PVector>();
         ArrayList<PVector> member_reps = new ArrayList<PVector>();
         ArrayList<PVector> danger_forces = new ArrayList<PVector>();
-        ArrayList<Boolean> member_mask = new ArrayList<Boolean>();
         boolean masked = false;
 
         for(PVector goal: this.goals)
@@ -350,22 +349,18 @@ class ConSteer_Behavior
           if(other != drone)
           {
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos)) >= this.SECTOR_COS_SIM) 
+            {
+              if(PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag()<10) masked = true;
               member_atts.add(PVector.sub(drone.gausain_Attraction(other.pos).mult(0.66f),drone.linear_Repulsion(other.pos).mult(0.33f))); 
+            }
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
               member_reps.add(drone.linear_Repulsion(other.pos)); 
-            if(PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag()<25) 
-            {
-              member_mask.add(false);
-              masked = true;
-            }
-            else member_mask.add(true);  
           }
-        if(masked) drone.acc.mult(PIXEL_METRIC_CONV);
         for(PVector danger: this.dangers)
           if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
             danger_forces.add(drone.limExp_Repulsion(danger)); 
 
-        drone.create_context_segment(idx, intrest_forces, danger_forces, member_atts, member_reps, member_mask);
+        drone.create_context_segment(idx, intrest_forces, danger_forces, member_atts, member_reps, !masked);
       }
 
       //evaluate context steering behavior
@@ -420,10 +415,10 @@ class Drone {
     for(int it=0; it<this.DIRECTIONS; ++it)
     {
       goals.add(new PVector());
+      dangers.add(new PVector());
       att_members.add(new PVector());
       rep_members.add(new PVector());
       memberMask.add(true);
-      dangers.add(new PVector());
     }
 
     this.contextMaps.add(goals);
@@ -462,7 +457,7 @@ class Drone {
 
     if(DEBUG) System.out.println("Drone-Position = ("+this.pos.x+","+this.pos.y+")");
     
-    if(DEBUG) 
+    if(!DEBUG) 
     {
       stroke(0, 255, 0);
       for(PVector force: this.currentForces)
@@ -538,9 +533,11 @@ class Drone {
 
   //context steering 
   //update direction specific segments of all context maps
-  public void create_context_segment(int dir, ArrayList<PVector> intrest_forces, ArrayList<PVector> danger_forces, ArrayList<PVector> member_atts, ArrayList<PVector> member_reps, ArrayList<Boolean> member_mask)
+  public void create_context_segment(int dir, ArrayList<PVector> intrest_forces, ArrayList<PVector> danger_forces, ArrayList<PVector> member_atts, ArrayList<PVector> member_reps, boolean mask_val)
   {
     PVector strongest_force;
+    this.memberMask.set(dir,mask_val);
+
     strongest_force = new PVector();
     for(PVector intrest_force:intrest_forces) 
       if(strongest_force.mag() < intrest_force.mag()) 
@@ -557,16 +554,10 @@ class Drone {
       if(strongest_force.mag() < member_att.mag()) 
         strongest_force = member_att;
     this.contextMaps.get(ATT_MEMBER_VECTORS).set(dir,strongest_force.copy());
-
     strongest_force = new PVector();
-    boolean mask_val = true;
-    for(int idx=0; idx<member_reps.size(); ++idx)
-      if(strongest_force.mag() < member_reps.get(idx).mag()) 
-      {
-        strongest_force = member_reps.get(idx);
-        mask_val = member_mask.get(idx); 
-      }
-    this.memberMask.set(dir,mask_val);
+    for(PVector member_rep:member_reps)
+      if(strongest_force.mag() < member_rep.mag()) 
+        strongest_force = member_rep;
     this.contextMaps.get(REP_MEMBER_VECTORS).set(dir,strongest_force.copy());
   }
 
@@ -576,13 +567,14 @@ class Drone {
   { 
     //calculate total force per direction
     ArrayList<PVector> forces = new ArrayList<PVector>();
+    ArrayList<PVector> visualForces = new ArrayList<PVector>();
     ArrayList<Boolean> mask = new ArrayList<Boolean>();
     for(int idx=0; idx<this.DIRECTIONS; ++idx)
     {
       PVector force = new PVector();
       force.add(this.contextMaps.get(GOAL_VECTORS).get(idx).mult(1.5f));
       force.add(this.contextMaps.get(ATT_MEMBER_VECTORS).get(idx).mult(0.5f));
-      force.add(this.contextMaps.get(REP_MEMBER_VECTORS).get(idx).mult(1));
+      force.add(this.contextMaps.get(REP_MEMBER_VECTORS).get(idx).mult(1.25f));
       force.add(this.contextMaps.get(DANGER_VECTORS).get(idx).mult(2));
       
       //danger based mask
@@ -594,8 +586,10 @@ class Drone {
       if(cosSim < sectorCosSim) force.mult(map(cosSim,-1.0f,sectorCosSim,0.01f,0.75f));
       
       forces.add(force.copy());
+      if(mask.get(mask.size()-1)) visualForces.add(force.copy());
+      else visualForces.add(new PVector());
     }
-    this.currentForces = forces;
+    this.currentForces = visualForces;
 
     //select strongest force as main force direction
     PVector main_force = new PVector();
@@ -701,7 +695,7 @@ class Drone {
     //float quad_eq = sq(d)-(MEAN*d)-LIMIT;
     //float strength = (MEAN/10)*((G * tanh_inv_gauss) / (LIMIT/10) - quad_eq / (4*LIMIT))-(MEAN/100);
     
-    float strength = (G/(-3))*d+20; //simple linear  
+    float strength = (G/(-3))*d+21; //simple linear  
 
     force.normalize();
     force.mult(strength);

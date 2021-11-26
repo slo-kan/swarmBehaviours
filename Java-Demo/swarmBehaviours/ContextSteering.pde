@@ -136,7 +136,6 @@ class ConSteer_Behavior
         ArrayList<PVector> member_atts = new ArrayList<PVector>();
         ArrayList<PVector> member_reps = new ArrayList<PVector>();
         ArrayList<PVector> danger_forces = new ArrayList<PVector>();
-        ArrayList<Boolean> member_mask = new ArrayList<Boolean>();
         boolean masked = false;
 
         for(PVector goal: this.goals)
@@ -146,22 +145,18 @@ class ConSteer_Behavior
           if(other != drone)
           {
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos)) >= this.SECTOR_COS_SIM) 
+            {
+              if(PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag()<10) masked = true;
               member_atts.add(PVector.sub(drone.gausain_Attraction(other.pos).mult(0.66),drone.linear_Repulsion(other.pos).mult(0.33))); 
+            }
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
               member_reps.add(drone.linear_Repulsion(other.pos)); 
-            if(PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag()<25) 
-            {
-              member_mask.add(false);
-              masked = true;
-            }
-            else member_mask.add(true);  
           }
-        if(masked) drone.acc.mult(PIXEL_METRIC_CONV);
         for(PVector danger: this.dangers)
           if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
             danger_forces.add(drone.limExp_Repulsion(danger)); 
 
-        drone.create_context_segment(idx, intrest_forces, danger_forces, member_atts, member_reps, member_mask);
+        drone.create_context_segment(idx, intrest_forces, danger_forces, member_atts, member_reps, !masked);
       }
 
       //evaluate context steering behavior
