@@ -1,9 +1,7 @@
 class Drone {
   //main vars of any drone
   ArrayList<PVector> prev;
-  PVector pos;
-  PVector vel;
-  PVector acc;
+  PVector pos,vel,acc;
   final float G = 1.98;
   final float MAX_SPEED = 3;
   final static boolean DEBUG = false;
@@ -63,7 +61,7 @@ class Drone {
   {
     if(DEBUG) System.out.println("Drone-Acceleration = ("+this.acc.x+","+this.acc.y+")");
     this.vel.add(this.acc);
-    this.vel.limit(MAX_SPEED);
+    this.vel.limit(this.MAX_SPEED);
     if(DEBUG) System.out.println("Drone-Velocity = ("+this.vel.x+","+this.vel.y+")");
     this.pos.add(this.vel);
     this.acc.mult(0);
@@ -87,7 +85,7 @@ class Drone {
 
     if(DEBUG) System.out.println("Drone-Position = ("+this.pos.x+","+this.pos.y+")");
     
-    if(!DEBUG) 
+    if(DEBUG) 
     {
       stroke(0, 255, 0);
       for(PVector force: this.currentForces)
@@ -99,7 +97,7 @@ class Drone {
       }
     }
 
-    if(!DEBUG)
+    if(DEBUG)
     {
       stroke(255, 175, 25);
       strokeWeight(2);

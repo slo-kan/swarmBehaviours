@@ -76,4 +76,5 @@ void draw()
     drone.update();
     drone.show(height,width);
   }
+  behavior.removeVisited();
 }

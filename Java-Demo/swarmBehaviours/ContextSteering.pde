@@ -57,21 +57,20 @@ class ConSteer_Behavior
       ArrayList<PVector> goals_updated = new ArrayList<PVector>();
       for(PVector goal: this.goals)
       {
-        PVector current = goal.copy();
-        goals_updated.add(current);
+        boolean add = true;
         for(Drone drone:this.drones)
-          if(floor(drone.pos.x) == floor(goal.x) && 
-             floor(drone.pos.y) == floor(goal.y) )
-            { goals_updated.remove(current); break;}
+          if(abs(drone.pos.x - goal.x)<2 && 
+             abs(drone.pos.y - goal.y)<2 )
+          { add = false; break; }
+        if(add) goals_updated.add(goal.copy());
       }
-      this.goals = goals_updated;
+      this.goals.clear();
+      this.goals.addAll(goals_updated);
     }
 
     //draw behavior specific parts
     void draw()
     {
-      removeVisited();
-
       stroke(0, 255, 0);
       strokeWeight(8);
       for (PVector goal:this.goals)

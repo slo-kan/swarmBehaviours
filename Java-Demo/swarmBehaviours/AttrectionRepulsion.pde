@@ -4,8 +4,14 @@ class AttRep_Behavior
   ArrayList<Drone> drones;
   ArrayList<PVector> attractors = new ArrayList<PVector>();
   ArrayList<PVector> repellPoints = new ArrayList<PVector>();
-  float comfy_dist = 48;
-  float perlimiter = 24;
+  final int ATT_MULT = 128;
+  final int REP_MULT = 44;
+  final int DRONE_ATT_MULT = 2;
+  final int DRONE_REP_MULT = 20;
+  final float COMFY_DIST = 30;
+  final float PERLIMITER = 25;
+  final float DRONE_PERLIMITER = 10;
+  
 
   //constructor
   AttRep_Behavior(ArrayList<Drone> drones)
@@ -15,7 +21,7 @@ class AttRep_Behavior
   void setup(int ATTs,int REPs)
   {
     for(int it = 0; it < ATTs; ++it)
-        this.attractors.add(new PVector(random(width-4), random(height-4)));
+      this.attractors.add(new PVector(random(width-4), random(height-4)));
     
     for(int it = 0; it < REPs; ++it)
       this.repellPoints.add(new PVector(random(width-4), random(height-4)));
@@ -49,21 +55,20 @@ class AttRep_Behavior
     ArrayList<PVector> attractors_updated = new ArrayList<PVector>();
     for(PVector attractor: this.attractors)
     {
-      PVector current = attractor.copy();
-      attractors_updated.add(current);
+      boolean add = true;
       for(Drone drone:this.drones)
-        if(floor(drone.pos.x) == floor(attractor.x) && 
-           floor(drone.pos.y) == floor(attractor.y) )
-          { attractors_updated.remove(current); break;}
+        if(abs(drone.pos.x - attractor.x)<2 && 
+           abs(drone.pos.y - attractor.y)<2 )
+        { add = false; break; }
+      if(add) attractors_updated.add(attractor.copy());
     }
-    this.attractors = attractors_updated;
+    this.attractors.clear();
+    this.attractors.addAll(attractors_updated);
   }
 
   //draw behavior specific parts
   void draw()
   {
-    removeVisited();
-
     stroke(0, 255, 0);
     strokeWeight(8);
     for (PVector attractor:this.attractors)
@@ -79,29 +84,29 @@ class AttRep_Behavior
   void primitive_attRep(Drone drone)
   {
     for(PVector attractor:this.attractors)
-      drone.primitive_attraction(attractor,comfy_dist,10);
+      drone.primitive_attraction(attractor,COMFY_DIST,10);
 
     for(PVector repellPoint:this.repellPoints)
-      drone.primitive_repulsion(repellPoint,comfy_dist,20);
+      drone.primitive_repulsion(repellPoint,COMFY_DIST,20);
 
     for(Drone other:this.drones)
-      if(other!=drone) drone.primitive_attraction(other.pos,2*comfy_dist,1);
+      if(other!=drone) drone.primitive_attraction(other.pos,2*COMFY_DIST,1);
     for(Drone other:this.drones)
-      if(other!=drone) drone.primitive_repulsion(other.pos,1.2*comfy_dist,5);  
+      if(other!=drone) drone.primitive_repulsion(other.pos,1.2*COMFY_DIST,5);  
   }
 
   //behavior specific function for each drone
   void advanced_attRep(Drone drone)
   {
     for(PVector attractor:this.attractors)
-      drone.linear_attraction(attractor,44); 
+      drone.linear_attraction(attractor,ATT_MULT); 
 
     for(PVector repellPoint:this.repellPoints)
-      drone.simpleExponential_repulsion(repellPoint,perlimiter,44);
+      drone.simpleExponential_repulsion(repellPoint,PERLIMITER,REP_MULT);
 
     for(Drone other:this.drones)
-      if(other!=drone) drone.comfy_attraction(other.pos,comfy_dist,3);
+      if(other!=drone) drone.comfy_attraction(other.pos,COMFY_DIST,DRONE_ATT_MULT);
     for(Drone other:this.drones)
-      if(other!=drone) drone.complexExponential_repulsion(other.pos,perlimiter,3,10);
+      if(other!=drone) drone.complexExponential_repulsion(other.pos,DRONE_PERLIMITER,DRONE_ATT_MULT,DRONE_REP_MULT);
   }
 };
