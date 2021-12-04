@@ -274,7 +274,7 @@ static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y -= force.y;
 }
 
-//total_force = (kad*(distance-d)/max(distance,0.01) - kbd*exp(-distance²/(r²/log(kbd/kad)))) * dist_vec
+//total_force = (kad*(distance-d)/max(distance,0.01) - kbd*exp(-distance²/(dr²/log(kbd/kad)))) * dist_vec
 static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float reg_size, float comfy_dist, float att_multiplier, float rep_multiplier)
 {
     struct EnuCoor_f force = {

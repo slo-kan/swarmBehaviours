@@ -3,12 +3,32 @@ class ConSteer_Behavior
     ArrayList<Drone> drones;
     ArrayList<PVector> goals = new ArrayList<PVector>();
     ArrayList<PVector> dangers = new ArrayList<PVector>();
+    ArrayList<PVector> border_points = new ArrayList<PVector>();
     ArrayList<PVector> RAY_DIRS = new ArrayList<PVector>();
     boolean DEBUG = false;
     float SECTOR_COS_SIM;
+    final float BORDER_TO_CLOSE = 3;
+    final float MEMBER_TO_CLOSE = 5;
+    final float SWARM_DIST = 10;
+
+    final float GOAL_LIMIT = 30;
+    final float DANGER_LIMIT = 40;
+    final float DANGER_SIGMA = 3.85;
+    final float DANGER_GAMMA = 18.5;
+    final float DANGER_ALPHA = 5;
+    final float MEMBER_REP_LIMIT = 30; 
+    final float MEMBER_ATT_LIMIT = 40;
+    final float MEMBER_ATT_CUT_OFF = 18.9;
+    final float MEMBER_ATT_SIGMA = 5;
+    final float MEMBER_ATT_GAMMA = 4.25;
+    final float MEMBER_ATT_MEAN = 15;
+
+    final float INV_GAUSSIAN_LIMIT = 30;
+    final float INV_GAUSSIAN_SIGMA = 5;
+    final float INV_GAUSSIAN_MEAN = 15;
 
     //constructor
-    ConSteer_Behavior(ArrayList<Drone> drones, int directions)
+    ConSteer_Behavior(ArrayList<Drone> drones, int directions, int w, int h)
     { 
         this.drones = drones; 
         for(int it=0; it<directions; ++it)
@@ -17,6 +37,17 @@ class ConSteer_Behavior
           this.RAY_DIRS.add(PVector.fromAngle(angle));
         }
         this.SECTOR_COS_SIM = cos(PI/directions);
+
+        for(int x=0; x<w; ++x)
+        {
+          border_points.add(new PVector(x,0));
+          border_points.add(new PVector(x,h));
+        }
+        for(int y=0; y<h; ++y)
+        {
+          border_points.add(new PVector(0,y));
+          border_points.add(new PVector(w,y));
+        }
     }
 
     //for initial setup of certain number of random goals and dangers
@@ -135,27 +166,40 @@ class ConSteer_Behavior
         ArrayList<PVector> member_atts = new ArrayList<PVector>();
         ArrayList<PVector> member_reps = new ArrayList<PVector>();
         ArrayList<PVector> danger_forces = new ArrayList<PVector>();
+        ArrayList<PVector> alignment_forces = new ArrayList<PVector>();
         boolean masked = false;
 
         for(PVector goal: this.goals)
           if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(goal,drone.pos)) >= this.SECTOR_COS_SIM) 
-            intrest_forces.add(drone.invGausain_Attraction(goal));
+            intrest_forces.add(drone.linear_Attraction(goal,GOAL_LIMIT));
         for(Drone other: this.drones)
           if(other != drone)
           {
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos)) >= this.SECTOR_COS_SIM) 
             {
-              if(PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag()<10) masked = true;
-              member_atts.add(PVector.sub(drone.gausain_Attraction(other.pos).mult(0.66),drone.linear_Repulsion(other.pos).mult(0.33))); 
+              float member_dist = PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag();
+              if(member_dist<=MEMBER_TO_CLOSE) masked = true;
+              else if (member_dist<=SWARM_DIST) alignment_forces.add(other.vel);
+              member_atts.add(drone.gausain_Attraction(other.pos,MEMBER_ATT_LIMIT,MEMBER_ATT_CUT_OFF,MEMBER_ATT_SIGMA,MEMBER_ATT_GAMMA,MEMBER_ATT_MEAN)); 
             }
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
-              member_reps.add(drone.linear_Repulsion(other.pos)); 
+            {
+              //float member_dist = PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag();
+              //if(member_dist<=MEMBER_TO_CLOSE) masked = true;
+              member_reps.add(drone.linear_Repulsion(other.pos,MEMBER_REP_LIMIT)); 
+            }
           }
         for(PVector danger: this.dangers)
           if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
-            danger_forces.add(drone.limExp_Repulsion(danger)); 
+            danger_forces.add(drone.limExp_Repulsion(danger,DANGER_LIMIT,DANGER_SIGMA,DANGER_GAMMA,DANGER_ALPHA)); 
+        for(PVector danger: this.border_points)
+          if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
+          {
+            float member_dist = PVector.sub(danger,drone.pos).mult(PIXEL_METRIC_CONV).mag();
+            if(member_dist<=BORDER_TO_CLOSE) masked = true;
+          }
 
-        drone.create_context_segment(idx, intrest_forces, danger_forces, member_atts, member_reps, !masked);
+        drone.create_context_segment(idx, intrest_forces, danger_forces, member_atts, member_reps, alignment_forces, !masked);
       }
 
       //evaluate context steering behavior

@@ -24,7 +24,7 @@ public static float cosine_sim(PVector a, PVector b)
 
 //global vars
 ArrayList<Drone> drones = new ArrayList<Drone>();
-final int DRONE_COUNT = 10;
+final int DRONE_COUNT = 8;
 final int DRONE_DIRECTIONS = 8;
 final int MAX_TICKS = 450;
 final int UPDATE_PORTION = 2;
@@ -43,8 +43,8 @@ public void setup()
     //drones.add(new Drone(random(width), random(height))); //att_rep
     drones.add(new Drone(random(width), random(height), DRONE_DIRECTIONS)); //con_steer
   
-  //behavior = new AttRep_Behavior(drones);
-  behavior = new ConSteer_Behavior(drones, DRONE_DIRECTIONS);
+  //behavior = new AttRep_Behavior(drones, width, height);
+  behavior = new ConSteer_Behavior(drones, DRONE_DIRECTIONS, width, height);
 
   //takes number of attraction and repulsion objects
   //behavior.setup(1,1);  //for test mode
@@ -102,18 +102,33 @@ class AttRep_Behavior
   ArrayList<Drone> drones;
   ArrayList<PVector> attractors = new ArrayList<PVector>();
   ArrayList<PVector> repellPoints = new ArrayList<PVector>();
+  ArrayList<PVector> border_points = new ArrayList<PVector>();
   final int ATT_MULT = 128;
   final int REP_MULT = 44;
   final int DRONE_ATT_MULT = 2;
   final int DRONE_REP_MULT = 20;
   final float COMFY_DIST = 30;
   final float PERLIMITER = 25;
+  final float BORDER_PERLIMITER = 5;
   final float DRONE_PERLIMITER = 10;
   
 
   //constructor
-  AttRep_Behavior(ArrayList<Drone> drones)
-  { this.drones = drones; }
+  AttRep_Behavior(ArrayList<Drone> drones, int w, int h)
+  { 
+    this.drones = drones; 
+
+    for(int x=0; x<w; ++x)
+    {
+      border_points.add(new PVector(x,0));
+      border_points.add(new PVector(x,h));
+    }
+    for(int y=0; y<h; ++y)
+    {
+      border_points.add(new PVector(0,y));
+      border_points.add(new PVector(w,y));
+    }
+  }
 
   //for initial setup of certain number of random attractors and repell points
   public void setup(int ATTs,int REPs)
@@ -201,6 +216,9 @@ class AttRep_Behavior
 
     for(PVector repellPoint:this.repellPoints)
       drone.simpleExponential_repulsion(repellPoint,PERLIMITER,REP_MULT);
+    
+    for(PVector repellPoint:this.border_points)
+      drone.simpleExponential_repulsion(repellPoint,BORDER_PERLIMITER,REP_MULT);
 
     for(Drone other:this.drones)
       if(other!=drone) drone.comfy_attraction(other.pos,COMFY_DIST,DRONE_ATT_MULT);
@@ -213,12 +231,32 @@ class ConSteer_Behavior
     ArrayList<Drone> drones;
     ArrayList<PVector> goals = new ArrayList<PVector>();
     ArrayList<PVector> dangers = new ArrayList<PVector>();
+    ArrayList<PVector> border_points = new ArrayList<PVector>();
     ArrayList<PVector> RAY_DIRS = new ArrayList<PVector>();
     boolean DEBUG = false;
     float SECTOR_COS_SIM;
+    final float BORDER_TO_CLOSE = 3;
+    final float MEMBER_TO_CLOSE = 5;
+    final float SWARM_DIST = 10;
+
+    final float GOAL_LIMIT = 30;
+    final float DANGER_LIMIT = 40;
+    final float DANGER_SIGMA = 3.85f;
+    final float DANGER_GAMMA = 18.5f;
+    final float DANGER_ALPHA = 5;
+    final float MEMBER_REP_LIMIT = 30; 
+    final float MEMBER_ATT_LIMIT = 40;
+    final float MEMBER_ATT_CUT_OFF = 18.9f;
+    final float MEMBER_ATT_SIGMA = 5;
+    final float MEMBER_ATT_GAMMA = 4.25f;
+    final float MEMBER_ATT_MEAN = 15;
+
+    final float INV_GAUSSIAN_LIMIT = 30;
+    final float INV_GAUSSIAN_SIGMA = 5;
+    final float INV_GAUSSIAN_MEAN = 15;
 
     //constructor
-    ConSteer_Behavior(ArrayList<Drone> drones, int directions)
+    ConSteer_Behavior(ArrayList<Drone> drones, int directions, int w, int h)
     { 
         this.drones = drones; 
         for(int it=0; it<directions; ++it)
@@ -227,6 +265,17 @@ class ConSteer_Behavior
           this.RAY_DIRS.add(PVector.fromAngle(angle));
         }
         this.SECTOR_COS_SIM = cos(PI/directions);
+
+        for(int x=0; x<w; ++x)
+        {
+          border_points.add(new PVector(x,0));
+          border_points.add(new PVector(x,h));
+        }
+        for(int y=0; y<h; ++y)
+        {
+          border_points.add(new PVector(0,y));
+          border_points.add(new PVector(w,y));
+        }
     }
 
     //for initial setup of certain number of random goals and dangers
@@ -345,27 +394,40 @@ class ConSteer_Behavior
         ArrayList<PVector> member_atts = new ArrayList<PVector>();
         ArrayList<PVector> member_reps = new ArrayList<PVector>();
         ArrayList<PVector> danger_forces = new ArrayList<PVector>();
+        ArrayList<PVector> alignment_forces = new ArrayList<PVector>();
         boolean masked = false;
 
         for(PVector goal: this.goals)
           if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(goal,drone.pos)) >= this.SECTOR_COS_SIM) 
-            intrest_forces.add(drone.invGausain_Attraction(goal));
+            intrest_forces.add(drone.linear_Attraction(goal,GOAL_LIMIT));
         for(Drone other: this.drones)
           if(other != drone)
           {
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos)) >= this.SECTOR_COS_SIM) 
             {
-              if(PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag()<10) masked = true;
-              member_atts.add(PVector.sub(drone.gausain_Attraction(other.pos).mult(0.66f),drone.linear_Repulsion(other.pos).mult(0.33f))); 
+              float member_dist = PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag();
+              if(member_dist<=MEMBER_TO_CLOSE) masked = true;
+              else if (member_dist<=SWARM_DIST) alignment_forces.add(other.vel);
+              member_atts.add(drone.gausain_Attraction(other.pos,MEMBER_ATT_LIMIT,MEMBER_ATT_CUT_OFF,MEMBER_ATT_SIGMA,MEMBER_ATT_GAMMA,MEMBER_ATT_MEAN)); 
             }
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
-              member_reps.add(drone.linear_Repulsion(other.pos)); 
+            {
+              //float member_dist = PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag();
+              //if(member_dist<=MEMBER_TO_CLOSE) masked = true;
+              member_reps.add(drone.linear_Repulsion(other.pos,MEMBER_REP_LIMIT)); 
+            }
           }
         for(PVector danger: this.dangers)
           if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
-            danger_forces.add(drone.limExp_Repulsion(danger)); 
+            danger_forces.add(drone.limExp_Repulsion(danger,DANGER_LIMIT,DANGER_SIGMA,DANGER_GAMMA,DANGER_ALPHA)); 
+        for(PVector danger: this.border_points)
+          if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
+          {
+            float member_dist = PVector.sub(danger,drone.pos).mult(PIXEL_METRIC_CONV).mag();
+            if(member_dist<=BORDER_TO_CLOSE) masked = true;
+          }
 
-        drone.create_context_segment(idx, intrest_forces, danger_forces, member_atts, member_reps, !masked);
+        drone.create_context_segment(idx, intrest_forces, danger_forces, member_atts, member_reps, alignment_forces, !masked);
       }
 
       //evaluate context steering behavior
@@ -380,24 +442,30 @@ class Drone {
   final float G = 1.98f;
   final float MAX_SPEED = 3;
   final static boolean DEBUG = false;
+  final static int CLIPPED = 0;
+  final static int BOUNCING = 1;
+  final static int WRAPED = 2;
   
   //context steering specific globals
   ArrayList<ArrayList<PVector>> contextMaps = new ArrayList<ArrayList<PVector>>();
   ArrayList<PVector> currentForces = new ArrayList<PVector>();
+  ArrayList<PVector> alignmentForces = new ArrayList<PVector>();
   ArrayList<Boolean> memberMask = new ArrayList<Boolean>();
   PVector prevForce = new PVector();
-  final int DIRECTIONS, VISUAL_SCALE = 5;
-  final int GOAL_VECTORS = 0;
-  final int DANGER_VECTORS = 1;
-  final int ATT_MEMBER_VECTORS = 2;
-  final int REP_MEMBER_VECTORS = 3;
+  final float GOAL_MULT = 1.75f;
+  final float DANGER_MULT = 2;
+  final float MEMBER_ATT_MULT = 4;
+  final float MEMBER_REP_MULT = 0.5f;
+  final static int VISUAL_SCALE = 2;
+  final static int GOAL_VECTORS = 0;
+  final static int DANGER_VECTORS = 1;
+  final static int ATT_MEMBER_VECTORS = 2;
+  final static int REP_MEMBER_VECTORS = 3;
+  int DIRECTIONS;
 
   //constructors
   Drone(float x, float y) 
-  { this(x,y,8); }
-
-  Drone(float x, float y, int directions) 
-  {
+  { 
     this.pos = new PVector(x, y);
     this.prev = new ArrayList<PVector>();
     this.prev.add(new PVector(x, y));
@@ -406,7 +474,12 @@ class Drone {
     this.vel = PVector.random2D().setMag(random(MAX_SPEED/10, MAX_SPEED/5));
     //this.vel = new PVector(); //no initial velocity
     if(DEBUG) System.out.println("Init-Drone-Velocity = ("+this.vel.x+","+this.vel.y+")");
-    this.acc = new PVector();
+    this.acc = new PVector(); 
+  }
+
+  Drone(float x, float y, int directions) 
+  {
+    this(x,y);
 
     //context steering specific initialization
     this.DIRECTIONS = directions;
@@ -442,17 +515,34 @@ class Drone {
     this.acc.mult(0);
   }
 
-  public void borders(int h, int w) {
-    while(ceil(this.pos.x)<0) this.pos.x = this.pos.x+w;
-    while(ceil(this.pos.y)<0) this.pos.y = this.pos.y+h;
-    while(floor(this.pos.x)>w) this.pos.x = this.pos.x-w;
-    while(floor(this.pos.y)>h) this.pos.y = this.pos.y-h;
+  public void borders(int h, int w, int border_typ) {
+    if(border_typ==CLIPPED)
+    {
+      while(ceil(this.pos.x)<0)  this.pos.x = 0;
+      while(ceil(this.pos.y)<0)  this.pos.y = 0;
+      while(floor(this.pos.x)>w) this.pos.x = w;
+      while(floor(this.pos.y)>h) this.pos.y = h;
+    }
+    else if(border_typ==BOUNCING)
+    {
+      while(ceil(this.pos.x)<0)  this.pos.x = (this.pos.x*(-1))%w;
+      while(ceil(this.pos.y)<0)  this.pos.y = (this.pos.y*(-1))%h;
+      while(floor(this.pos.x)>w) this.pos.x = w-(this.pos.x%w);
+      while(floor(this.pos.y)>h) this.pos.y = h-(this.pos.y%h);
+    }
+    else if(border_typ==WRAPED)
+    {
+      while(ceil(this.pos.x)<0)  this.pos.x = this.pos.x+w;
+      while(ceil(this.pos.y)<0)  this.pos.y = this.pos.y+h;
+      while(floor(this.pos.x)>w) this.pos.x = this.pos.x-w;
+      while(floor(this.pos.y)>h) this.pos.y = this.pos.y-h;
+    }
   }
 
   //processing specific code to draw drones
   public void show(int h, int w) 
   {
-    borders(h,w);
+    borders(h,w,WRAPED);
 
     stroke(255, 255, 255, 255);
     strokeWeight(6);
@@ -472,7 +562,7 @@ class Drone {
       }
     }
 
-    if(DEBUG)
+    if(!DEBUG)
     {
       stroke(255, 175, 25);
       strokeWeight(2);
@@ -481,7 +571,7 @@ class Drone {
       point(this.pos.x+this.prevForce.x*VISUAL_SCALE,this.pos.y+this.prevForce.y*VISUAL_SCALE);
     }
 
-    if(DEBUG) 
+    if(!DEBUG) 
     {
       stroke(255, 0, 0);
       for(PVector danger: this.contextMaps.get(DANGER_VECTORS))
@@ -536,10 +626,11 @@ class Drone {
 
   //context steering 
   //update direction specific segments of all context maps
-  public void create_context_segment(int dir, ArrayList<PVector> intrest_forces, ArrayList<PVector> danger_forces, ArrayList<PVector> member_atts, ArrayList<PVector> member_reps, boolean mask_val)
+  public void create_context_segment(int dir, ArrayList<PVector> intrest_forces, ArrayList<PVector> danger_forces, ArrayList<PVector> member_atts, ArrayList<PVector> member_reps, ArrayList<PVector> alignment_forces, boolean mask_val)
   {
     PVector strongest_force;
     this.memberMask.set(dir,mask_val);
+    for(PVector force: alignment_forces) this.alignmentForces.add(force);
 
     strongest_force = new PVector();
     for(PVector intrest_force:intrest_forces) 
@@ -568,6 +659,12 @@ class Drone {
   //update acceleration based on context steering behavior
   public void context_steering(ArrayList<PVector> rayDirs, float sectorCosSim)
   { 
+    //calculate alignment vector
+    PVector alignment = new PVector();
+    for(PVector force:this.alignmentForces) alignment.add(force);
+    alignment.add(this.vel);
+    alignment.div(this.alignmentForces.size()+1);
+
     //calculate total force per direction
     ArrayList<PVector> forces = new ArrayList<PVector>();
     ArrayList<PVector> visualForces = new ArrayList<PVector>();
@@ -575,18 +672,19 @@ class Drone {
     for(int idx=0; idx<this.DIRECTIONS; ++idx)
     {
       PVector force = new PVector();
-      force.add(this.contextMaps.get(GOAL_VECTORS).get(idx).mult(1.5f));
-      force.add(this.contextMaps.get(ATT_MEMBER_VECTORS).get(idx).mult(0.5f));
-      force.add(this.contextMaps.get(REP_MEMBER_VECTORS).get(idx).mult(1.25f));
-      force.add(this.contextMaps.get(DANGER_VECTORS).get(idx).mult(2));
+      force.add(this.contextMaps.get(GOAL_VECTORS).get(idx).mult(this.GOAL_MULT));
+      force.add(this.contextMaps.get(ATT_MEMBER_VECTORS).get(idx).mult(this.MEMBER_ATT_MULT));
+      force.add(this.contextMaps.get(REP_MEMBER_VECTORS).get(idx).mult(this.MEMBER_REP_MULT));
+      force.add(this.contextMaps.get(DANGER_VECTORS).get(idx).mult(this.DANGER_MULT));
       
       //danger based mask
       if((cosine_sim(rayDirs.get(idx),force) < 0.0f) || !memberMask.get(idx)) mask.add(false);
       else mask.add(true);
       
-      //less likely to switch directions
-      float cosSim = cosine_sim(rayDirs.get(idx),this.prevForce);
-      if(cosSim < sectorCosSim) force.mult(map(cosSim,-1.0f,sectorCosSim,0.01f,0.75f));
+      //more likely to perform alignment otherwise less likely to switch directions
+      float alignSim = cosine_sim(rayDirs.get(idx),alignment);
+      float constrainSim = max(sectorCosSim,cosine_sim(alignment,this.vel));
+      if(alignSim < constrainSim) force.mult(map(alignSim,-1.0f,constrainSim,0.10f,1.0f));
       
       forces.add(force.copy());
       if(mask.get(mask.size()-1)) visualForces.add(force.copy());
@@ -605,7 +703,7 @@ class Drone {
     if(DEBUG) System.out.println("Main Direction: "+maxIdx);
 
     PVector total_force = main_force.copy();
-    if(maxIdx < forces.size() && forces.get(maxIdx).mag()>3) 
+    if(maxIdx < forces.size() && forces.get(maxIdx).mag()>1) 
     {
       //interpolate between main and stronger neighbor force
       int leftIdx = (maxIdx-1 + this.DIRECTIONS)%this.DIRECTIONS;
@@ -621,6 +719,8 @@ class Drone {
         total_force.add(secondary_force);
       }
     }
+    else if(maxIdx >= forces.size() || forces.get(maxIdx).mag()<0.1f)
+    this.vel.mult(0);
 
     //determine force output
     total_force.setMag(MAX_SPEED);  
@@ -630,14 +730,29 @@ class Drone {
 
   //context steering
   //calculate repulsion forces to other drones
-  public PVector linear_Repulsion(PVector target)
+  public PVector linear_Repulsion(PVector target, float limit)
   {
-    final float LIMIT = 30.0f;
-
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
-    d = min(d, LIMIT);
-    float strength = (-1/3)*d+10; //simple linear
+    d = min(d, limit);
+
+    float strength = ((-1/18)*d*d+50)*(-1); 
+
+    force.normalize();
+    force.mult(strength);
+    return force.copy();
+  }
+
+  //context steering
+  //calculate attraction forces to GOAL_VECTORS
+  public PVector linear_Attraction(PVector target, float limit)
+  {
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
+    float d = force.mag();
+    d = min(d, limit);
+
+    float strength = (G/(-3))*d+21;
+
     force.normalize();
     force.mult(strength);
     return force.copy();
@@ -645,17 +760,16 @@ class Drone {
 
   //context steering
   //calculate repulsion force from DANGER_VECTORS
-  public PVector limExp_Repulsion(PVector target)
+  public PVector limExp_Repulsion(PVector target, float limit, float sigma, float gamma, float alpha)
   {
-    final float LIMIT = 40;
-    final float SIGMA = 3.85f;
-
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
     float strength;
-    d = min(d, LIMIT);
-    if (d<11) strength = G * (0.5f*d - LIMIT) / SIGMA; //linear_rep_limit_close
-    else strength = -1*exp(-1*(G * ((LIMIT/8)*log(d) - (LIMIT/2-1.5f))/SIGMA)); //exp_rep_mid_far
+    d = min(d, limit);
+
+    if (d<11) strength = G * (d/2 - limit) / sigma; //linear_rep_limit_close
+    else strength = -1*exp(-1*(G * (alpha*log(d) - gamma)/sigma)); //exp_rep_mid_far
+
     force = force.normalize();
     force = force.mult(strength);
     return force.copy();
@@ -663,42 +777,33 @@ class Drone {
 
   //context steering
   //calculate attraction forces to other drones
-  public PVector gausain_Attraction(PVector target)
+  public PVector gausain_Attraction(PVector target, float limit, float cutOff, float sigma, float gamma, float mean)
   {
-    final float LIMIT = 40;
-    final float SIGMA = 4.98f;
-    final float GAMMA = 6;
-    final float MEAN = 20;
-
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
-    d = min(d, LIMIT);
+    d = min(d, limit);
     float strength;
     //strength = G*d-10; //simple linear
-    if(d<LIMIT-10) strength = (G*(d-MEAN)-sq(d-MEAN))/(LIMIT-10)+SIGMA; //close_mid_range
-    else strength = (-1)*(d/(G*G*G))+GAMMA; //low_att_far
+
+    if(d<cutOff) strength = (G*(d-mean)-sq(d-mean))/(2*mean)+sigma; //close_mid_range
+    else strength = (-1)*(d/(G*G*G*G))+gamma; //low_att_far
+
     force = force.normalize();
     force = force.mult(strength);
     return force.copy();
   }
-  
+
   //context steering
   //calculate attraction forces to GOAL_VECTORS
-  public PVector invGausain_Attraction(PVector target)
+  public PVector invGausain_Attraction(PVector target, float limit, float sigma, float mean)
   {
-    final float LIMIT = 30.0f;
-    final float SIGMA = 5.0f;
-    final float MEAN = LIMIT/2;
-
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
-    d = min(d, LIMIT);
+    d = min(d, limit);
   
-    //float tanh_inv_gauss = (float)(Math.tanh(exp(sq(d-MEAN)/(2*sq(SIGMA)))/(SIGMA*sqrt(TWO_PI)))*10-0.25);
-    //float quad_eq = sq(d)-(MEAN*d)-LIMIT;
-    //float strength = (MEAN/10)*((G * tanh_inv_gauss) / (LIMIT/10) - quad_eq / (4*LIMIT))-(MEAN/100);
-    
-    float strength = (G/(-3))*d+21; //simple linear  
+    float tanh_inv_gauss = (float)(Math.tanh(exp(sq(d-mean)/(2*sq(sigma)))/(sigma*sqrt(TWO_PI)))*10-0.25f);
+    float quad_eq = sq(d)-(mean*d)-limit;
+    float strength = (mean/10)*((G * tanh_inv_gauss) / (limit/10) - quad_eq / (4*limit))-(mean/100);
 
     force.normalize();
     force.mult(strength);

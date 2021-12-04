@@ -4,18 +4,33 @@ class AttRep_Behavior
   ArrayList<Drone> drones;
   ArrayList<PVector> attractors = new ArrayList<PVector>();
   ArrayList<PVector> repellPoints = new ArrayList<PVector>();
+  ArrayList<PVector> border_points = new ArrayList<PVector>();
   final int ATT_MULT = 128;
   final int REP_MULT = 44;
   final int DRONE_ATT_MULT = 2;
   final int DRONE_REP_MULT = 20;
   final float COMFY_DIST = 30;
   final float PERLIMITER = 25;
+  final float BORDER_PERLIMITER = 5;
   final float DRONE_PERLIMITER = 10;
   
 
   //constructor
-  AttRep_Behavior(ArrayList<Drone> drones)
-  { this.drones = drones; }
+  AttRep_Behavior(ArrayList<Drone> drones, int w, int h)
+  { 
+    this.drones = drones; 
+
+    for(int x=0; x<w; ++x)
+    {
+      border_points.add(new PVector(x,0));
+      border_points.add(new PVector(x,h));
+    }
+    for(int y=0; y<h; ++y)
+    {
+      border_points.add(new PVector(0,y));
+      border_points.add(new PVector(w,y));
+    }
+  }
 
   //for initial setup of certain number of random attractors and repell points
   void setup(int ATTs,int REPs)
@@ -103,6 +118,9 @@ class AttRep_Behavior
 
     for(PVector repellPoint:this.repellPoints)
       drone.simpleExponential_repulsion(repellPoint,PERLIMITER,REP_MULT);
+    
+    for(PVector repellPoint:this.border_points)
+      drone.simpleExponential_repulsion(repellPoint,BORDER_PERLIMITER,REP_MULT);
 
     for(Drone other:this.drones)
       if(other!=drone) drone.comfy_attraction(other.pos,COMFY_DIST,DRONE_ATT_MULT);
