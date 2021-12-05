@@ -236,8 +236,8 @@ class ConSteer_Behavior
     boolean DEBUG = false;
     float SECTOR_COS_SIM;
     final float BORDER_TO_CLOSE = 3;
-    final float MEMBER_TO_CLOSE = 5;
-    final float SWARM_DIST = 10;
+    final float MEMBER_TO_CLOSE = 4;
+    final float SWARM_DIST = 12;
 
     final float GOAL_LIMIT = 30;
     final float DANGER_LIMIT = 40;
@@ -544,10 +544,7 @@ class Drone {
   {
     borders(h,w,WRAPED);
 
-    stroke(255, 255, 255, 255);
-    strokeWeight(6);
-    point(this.pos.x, this.pos.y);
-
+    //context steering debug
     if(DEBUG) System.out.println("Drone-Position = ("+this.pos.x+","+this.pos.y+")");
     
     if(DEBUG) 
@@ -609,6 +606,10 @@ class Drone {
         point(this.pos.x+goal.x*VISUAL_SCALE,this.pos.y+goal.y*VISUAL_SCALE);
       }
     }
+
+    stroke(255, 255, 255, 255);
+    strokeWeight(6);
+    point(this.pos.x, this.pos.y);
 
     strokeWeight(2);
     stroke(255,255,255,25);
@@ -684,7 +685,7 @@ class Drone {
       //more likely to perform alignment otherwise less likely to switch directions
       float alignSim = cosine_sim(rayDirs.get(idx),alignment);
       float constrainSim = max(sectorCosSim,cosine_sim(alignment,this.vel));
-      if(alignSim < constrainSim) force.mult(map(alignSim,-1.0f,constrainSim,0.10f,1.0f));
+      if(alignSim < constrainSim) force.mult(map(alignSim,-1.0f,constrainSim,0.25f,1.0f));
       
       forces.add(force.copy());
       if(mask.get(mask.size()-1)) visualForces.add(force.copy());

@@ -8,8 +8,8 @@ class ConSteer_Behavior
     boolean DEBUG = false;
     float SECTOR_COS_SIM;
     final float BORDER_TO_CLOSE = 3;
-    final float MEMBER_TO_CLOSE = 5;
-    final float SWARM_DIST = 10;
+    final float MEMBER_TO_CLOSE = 4;
+    final float SWARM_DIST = 12;
 
     final float GOAL_LIMIT = 30;
     final float DANGER_LIMIT = 40;
