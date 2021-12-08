@@ -6,7 +6,7 @@ static float cosine_sim(PVector a, PVector b)
 
 //global vars
 ArrayList<Drone> drones = new ArrayList<Drone>();
-final int DRONE_COUNT = 8;
+final int DRONE_COUNT = 10;
 final int DRONE_DIRECTIONS = 8;
 final int MAX_TICKS = 450;
 final int UPDATE_PORTION = 2;

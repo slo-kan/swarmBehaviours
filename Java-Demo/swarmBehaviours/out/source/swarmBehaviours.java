@@ -24,7 +24,7 @@ public static float cosine_sim(PVector a, PVector b)
 
 //global vars
 ArrayList<Drone> drones = new ArrayList<Drone>();
-final int DRONE_COUNT = 8;
+final int DRONE_COUNT = 10;
 final int DRONE_DIRECTIONS = 8;
 final int MAX_TICKS = 450;
 final int UPDATE_PORTION = 2;
@@ -452,10 +452,10 @@ class Drone {
   ArrayList<PVector> alignmentForces = new ArrayList<PVector>();
   ArrayList<Boolean> memberMask = new ArrayList<Boolean>();
   PVector prevForce = new PVector();
-  final float GOAL_MULT = 1.75f;
-  final float DANGER_MULT = 2;
-  final float MEMBER_ATT_MULT = 4;
-  final float MEMBER_REP_MULT = 0.5f;
+  final float GOAL_MULT = 1.75f;//1.75;
+  final float DANGER_MULT = 2.5f;//2;
+  final float MEMBER_ATT_MULT = 4;//4;
+  final float MEMBER_REP_MULT = 4;//0.5;
   final static int VISUAL_SCALE = 2;
   final static int GOAL_VECTORS = 0;
   final static int DANGER_VECTORS = 1;
@@ -737,7 +737,7 @@ class Drone {
     float d = force.mag();
     d = min(d, limit);
 
-    float strength = ((-1/18)*d*d+50)*(-1); 
+    float strength = max((10/(d+0.1f)-1.5f),0)*(-1);
 
     force.normalize();
     force.mult(strength);
@@ -752,7 +752,8 @@ class Drone {
     float d = force.mag();
     d = min(d, limit);
 
-    float strength = (G/(-3))*d+21;
+    float strength;
+    strength = (G/(-3))*d+25;
 
     force.normalize();
     force.mult(strength);
@@ -786,8 +787,11 @@ class Drone {
     float strength;
     //strength = G*d-10; //simple linear
 
-    if(d<cutOff) strength = (G*(d-mean)-sq(d-mean))/(2*mean)+sigma; //close_mid_range
-    else strength = (-1)*(d/(G*G*G*G))+gamma; //low_att_far
+    //if(d<cutOff) strength = (G*(d-mean)-sq(d-mean))/(2*mean)+sigma; //close_mid_range
+    //else strength = (-1)*(d/(G*G*G*G))+gamma; //low_att_far
+
+    if(d>cutOff) strength = log(d-(cutOff-G/2))*G; 
+    else strength = 0;
 
     force = force.normalize();
     force = force.mult(strength);
