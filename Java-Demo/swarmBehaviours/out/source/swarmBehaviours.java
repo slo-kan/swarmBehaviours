@@ -452,10 +452,10 @@ class Drone {
   ArrayList<PVector> alignmentForces = new ArrayList<PVector>();
   ArrayList<Boolean> memberMask = new ArrayList<Boolean>();
   PVector prevForce = new PVector();
-  final float GOAL_MULT = 1.75f;//1.75;
-  final float DANGER_MULT = 2.5f;//2;
-  final float MEMBER_ATT_MULT = 4;//4;
-  final float MEMBER_REP_MULT = 4;//0.5;
+  final float GOAL_MULT = 1.75f;
+  final float DANGER_MULT = 2.5f;
+  final float MEMBER_ATT_MULT = 4;
+  final float MEMBER_REP_MULT = 4;
   final static int VISUAL_SCALE = 2;
   final static int GOAL_VECTORS = 0;
   final static int DANGER_VECTORS = 1;
