@@ -16,7 +16,7 @@ class Drone {
   ArrayList<Boolean> memberMask = new ArrayList<Boolean>();
   PVector prevForce = new PVector();
   final float GOAL_MULT = 1.75;
-  final float DANGER_MULT = 2.5;
+  final float DANGER_MULT = 1.75;
   final float MEMBER_ATT_MULT = 4;
   final float MEMBER_REP_MULT = 4;
   final static int VISUAL_SCALE = 2;
@@ -294,64 +294,28 @@ class Drone {
 
   //context steering
   //calculate repulsion forces to other drones
-  PVector linear_Repulsion(PVector target, float limit)
+  PVector linear_Repulsion(PVector target, float limit, float sigma, float gamma, float alpha)
   {
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
     d = min(d, limit);
 
-    float strength = max((10/(d+0.1)-1.5),0)*(-1);
+    float strength = max((sigma/(d+alpha)-gamma),0)*(-1);
 
     force.normalize();
     force.mult(strength);
-    return force.copy();
-  }
-
-  //context steering
-  //calculate attraction forces to GOAL_VECTORS
-  PVector linear_Attraction(PVector target, float limit)
-  {
-    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
-    float d = force.mag();
-    d = min(d, limit);
-
-    float strength;
-    strength = (G/(-3))*d+25;
-
-    force.normalize();
-    force.mult(strength);
-    return force.copy();
-  }
-
-  //context steering
-  //calculate repulsion force from DANGER_VECTORS
-  PVector limExp_Repulsion(PVector target, float limit, float sigma, float gamma, float alpha)
-  {
-    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
-    float d = force.mag();
-    float strength;
-    d = min(d, limit);
-
-    if (d<11) strength = G * (d/2 - limit) / sigma; //linear_rep_limit_close
-    else strength = -1*exp(-1*(G * (alpha*log(d) - gamma)/sigma)); //exp_rep_mid_far
-
-    force = force.normalize();
-    force = force.mult(strength);
     return force.copy();
   }
 
   //context steering
   //calculate attraction forces to other drones
-  PVector gausain_Attraction(PVector target, float limit, float cutOff, float sigma, float gamma, float mean)
+  PVector log_Attraction(PVector target, float limit, float cutOff)
   {
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
     d = min(d, limit);
     float strength;
     //strength = G*d-10; //simple linear
-
-    //if(d<cutOff) strength = (G*(d-mean)-sq(d-mean))/(2*mean)+sigma; //close_mid_range
-    //else strength = (-1)*(d/(G*G*G*G))+gamma; //low_att_far
 
     if(d>cutOff) strength = log(d-(cutOff-G/2))*G; 
     else strength = 0;
@@ -363,6 +327,56 @@ class Drone {
 
   //context steering
   //calculate attraction forces to GOAL_VECTORS
+  PVector linear_Attraction(PVector target, float limit, float sigma, float gamma)
+  {
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
+    float d = force.mag();
+    d = min(d, limit);
+
+    float strength;
+    strength = (G/sigma)*d+gamma;
+
+    force.normalize();
+    force.mult(strength);
+    return force.copy();
+  }
+
+  //context steering
+  //calculate repulsion force from DANGER_VECTORS
+  PVector limExp_Repulsion(PVector target, float limit, float cutOff, float sigma, float gamma, float alpha)
+  {
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
+    float d = force.mag();
+    float strength;
+    d = min(d, limit);
+
+    if (d<cutOff) strength = G * (d/2 - limit) / sigma; //linear_rep_limit_close
+    else strength = -1*exp(-1*(G * (alpha*log(d) - gamma)/sigma)); //exp_rep_mid_far
+
+    force = force.normalize();
+    force = force.mult(strength);
+    return force.copy();
+  }
+
+  //context steering
+  //alternative attraction forces to other drones
+  PVector gausain_Attraction(PVector target, float limit, float cutOff, float sigma, float gamma, float mean)
+  {
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
+    float d = force.mag();
+    d = min(d, limit);
+    float strength;
+
+    if(d<cutOff) strength = (G*(d-mean)-sq(d-mean))/(2*mean)+sigma; //close_mid_range
+    else strength = (-1)*(d/(G*G*G*G))+gamma; //low_att_far
+
+    force = force.normalize();
+    force = force.mult(strength);
+    return force.copy();
+  }
+
+  //context steering
+  //alternative attraction forces to GOAL_VECTORS
   PVector invGausain_Attraction(PVector target, float limit, float sigma, float mean)
   {
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);

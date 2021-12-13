@@ -235,25 +235,34 @@ class ConSteer_Behavior
     ArrayList<PVector> RAY_DIRS = new ArrayList<PVector>();
     boolean DEBUG = false;
     float SECTOR_COS_SIM;
-    final float BORDER_TO_CLOSE = 3;
+    final float BORDER_TO_CLOSE = 2;
+    final float DANGER_TO_CLOSE = 8;
     final float MEMBER_TO_CLOSE = 4;
     final float SWARM_DIST = 12;
 
     final float GOAL_LIMIT = 30;
+    final float GOAL_SIGMA = -3;
+    final float GOAL_GAMMA = 25;
     final float DANGER_LIMIT = 40;
+    final float DANGER_CUT_OFF = 5;
     final float DANGER_SIGMA = 3.85f;
     final float DANGER_GAMMA = 18.5f;
-    final float DANGER_ALPHA = 5;
+    final float DANGER_ALPHA = 20;
     final float MEMBER_REP_LIMIT = 30; 
+    final float MEMBER_REP_SIGMA = 10; 
+    final float MEMBER_REP_GAMMA = 1.5f;
+    final float MEMBER_REP_ALPHA = 0.1f;  
     final float MEMBER_ATT_LIMIT = 40;
     final float MEMBER_ATT_CUT_OFF = 18.9f;
-    final float MEMBER_ATT_SIGMA = 5;
-    final float MEMBER_ATT_GAMMA = 4.25f;
-    final float MEMBER_ATT_MEAN = 15;
 
     final float INV_GAUSSIAN_LIMIT = 30;
     final float INV_GAUSSIAN_SIGMA = 5;
     final float INV_GAUSSIAN_MEAN = 15;
+    final float GAUSSIAN_LIMIT = 40;
+    final float GAUSSIAN_CUT_OFF = 18.9f;
+    final float GAUSSIAN_SIGMA = 5;
+    final float GAUSSIAN_GAMMA = 4.25f;
+    final float GAUSSIAN_MEAN = 15;
 
     //constructor
     ConSteer_Behavior(ArrayList<Drone> drones, int directions, int w, int h)
@@ -399,7 +408,7 @@ class ConSteer_Behavior
 
         for(PVector goal: this.goals)
           if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(goal,drone.pos)) >= this.SECTOR_COS_SIM) 
-            intrest_forces.add(drone.linear_Attraction(goal,GOAL_LIMIT));
+            intrest_forces.add(drone.linear_Attraction(goal,GOAL_LIMIT,GOAL_SIGMA,GOAL_GAMMA));
         for(Drone other: this.drones)
           if(other != drone)
           {
@@ -408,18 +417,23 @@ class ConSteer_Behavior
               float member_dist = PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag();
               if(member_dist<=MEMBER_TO_CLOSE) masked = true;
               else if (member_dist<=SWARM_DIST) alignment_forces.add(other.vel);
-              member_atts.add(drone.gausain_Attraction(other.pos,MEMBER_ATT_LIMIT,MEMBER_ATT_CUT_OFF,MEMBER_ATT_SIGMA,MEMBER_ATT_GAMMA,MEMBER_ATT_MEAN)); 
+              member_atts.add(drone.log_Attraction(other.pos,MEMBER_ATT_LIMIT,MEMBER_ATT_CUT_OFF)); 
             }
             if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(other.pos,drone.pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
             {
               //float member_dist = PVector.sub(other.pos,drone.pos).mult(PIXEL_METRIC_CONV).mag();
               //if(member_dist<=MEMBER_TO_CLOSE) masked = true;
-              member_reps.add(drone.linear_Repulsion(other.pos,MEMBER_REP_LIMIT)); 
+              member_reps.add(drone.linear_Repulsion(other.pos,MEMBER_REP_LIMIT,MEMBER_REP_SIGMA,MEMBER_REP_GAMMA,MEMBER_REP_ALPHA)); 
             }
           }
         for(PVector danger: this.dangers)
-          if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
-            danger_forces.add(drone.limExp_Repulsion(danger,DANGER_LIMIT,DANGER_SIGMA,DANGER_GAMMA,DANGER_ALPHA)); 
+          if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
+            danger_forces.add(drone.limExp_Repulsion(danger,DANGER_LIMIT,DANGER_CUT_OFF,DANGER_SIGMA,DANGER_GAMMA,DANGER_ALPHA));
+          else if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM)
+          {
+            float member_dist = PVector.sub(danger,drone.pos).mult(PIXEL_METRIC_CONV).mag();
+            if(member_dist<=DANGER_TO_CLOSE) masked = true; 
+          }
         for(PVector danger: this.border_points)
           if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM) 
           {
@@ -453,7 +467,7 @@ class Drone {
   ArrayList<Boolean> memberMask = new ArrayList<Boolean>();
   PVector prevForce = new PVector();
   final float GOAL_MULT = 1.75f;
-  final float DANGER_MULT = 2.5f;
+  final float DANGER_MULT = 1.75f;
   final float MEMBER_ATT_MULT = 4;
   final float MEMBER_REP_MULT = 4;
   final static int VISUAL_SCALE = 2;
@@ -731,64 +745,28 @@ class Drone {
 
   //context steering
   //calculate repulsion forces to other drones
-  public PVector linear_Repulsion(PVector target, float limit)
+  public PVector linear_Repulsion(PVector target, float limit, float sigma, float gamma, float alpha)
   {
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
     d = min(d, limit);
 
-    float strength = max((10/(d+0.1f)-1.5f),0)*(-1);
+    float strength = max((sigma/(d+alpha)-gamma),0)*(-1);
 
     force.normalize();
     force.mult(strength);
-    return force.copy();
-  }
-
-  //context steering
-  //calculate attraction forces to GOAL_VECTORS
-  public PVector linear_Attraction(PVector target, float limit)
-  {
-    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
-    float d = force.mag();
-    d = min(d, limit);
-
-    float strength;
-    strength = (G/(-3))*d+25;
-
-    force.normalize();
-    force.mult(strength);
-    return force.copy();
-  }
-
-  //context steering
-  //calculate repulsion force from DANGER_VECTORS
-  public PVector limExp_Repulsion(PVector target, float limit, float sigma, float gamma, float alpha)
-  {
-    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
-    float d = force.mag();
-    float strength;
-    d = min(d, limit);
-
-    if (d<11) strength = G * (d/2 - limit) / sigma; //linear_rep_limit_close
-    else strength = -1*exp(-1*(G * (alpha*log(d) - gamma)/sigma)); //exp_rep_mid_far
-
-    force = force.normalize();
-    force = force.mult(strength);
     return force.copy();
   }
 
   //context steering
   //calculate attraction forces to other drones
-  public PVector gausain_Attraction(PVector target, float limit, float cutOff, float sigma, float gamma, float mean)
+  public PVector log_Attraction(PVector target, float limit, float cutOff)
   {
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
     float d = force.mag();
     d = min(d, limit);
     float strength;
     //strength = G*d-10; //simple linear
-
-    //if(d<cutOff) strength = (G*(d-mean)-sq(d-mean))/(2*mean)+sigma; //close_mid_range
-    //else strength = (-1)*(d/(G*G*G*G))+gamma; //low_att_far
 
     if(d>cutOff) strength = log(d-(cutOff-G/2))*G; 
     else strength = 0;
@@ -800,6 +778,56 @@ class Drone {
 
   //context steering
   //calculate attraction forces to GOAL_VECTORS
+  public PVector linear_Attraction(PVector target, float limit, float sigma, float gamma)
+  {
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
+    float d = force.mag();
+    d = min(d, limit);
+
+    float strength;
+    strength = (G/sigma)*d+gamma;
+
+    force.normalize();
+    force.mult(strength);
+    return force.copy();
+  }
+
+  //context steering
+  //calculate repulsion force from DANGER_VECTORS
+  public PVector limExp_Repulsion(PVector target, float limit, float cutOff, float sigma, float gamma, float alpha)
+  {
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
+    float d = force.mag();
+    float strength;
+    d = min(d, limit);
+
+    if (d<cutOff) strength = G * (d/2 - limit) / sigma; //linear_rep_limit_close
+    else strength = -1*exp(-1*(G * (alpha*log(d) - gamma)/sigma)); //exp_rep_mid_far
+
+    force = force.normalize();
+    force = force.mult(strength);
+    return force.copy();
+  }
+
+  //context steering
+  //alternative attraction forces to other drones
+  public PVector gausain_Attraction(PVector target, float limit, float cutOff, float sigma, float gamma, float mean)
+  {
+    PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
+    float d = force.mag();
+    d = min(d, limit);
+    float strength;
+
+    if(d<cutOff) strength = (G*(d-mean)-sq(d-mean))/(2*mean)+sigma; //close_mid_range
+    else strength = (-1)*(d/(G*G*G*G))+gamma; //low_att_far
+
+    force = force.normalize();
+    force = force.mult(strength);
+    return force.copy();
+  }
+
+  //context steering
+  //alternative attraction forces to GOAL_VECTORS
   public PVector invGausain_Attraction(PVector target, float limit, float sigma, float mean)
   {
     PVector force = PVector.sub(target, this.pos).mult(PIXEL_METRIC_CONV);
