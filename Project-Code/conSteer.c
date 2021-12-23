@@ -36,11 +36,6 @@
 #include "state.h"
 
 
-//radius of the globe
-#ifndef GLOBE_RADIUS
-#define GLOBE_RADIUS 6371000
-#endif
-
 /* FOLLOW_OFFSET_ X and Y are all in ENU frame */
 #ifndef FOLLOW_OFFSET_X
 #define FOLLOW_OFFSET_X 0.0f
@@ -55,68 +50,125 @@
 #define FLIGHT_HEIGHT 47.0f
 #endif
 
-// g parameter
+// radius of the globe
+#ifndef GLOBE_RADIUS
+#define GLOBE_RADIUS 6371000
+#endif
+
+// array initial size parameter
+#ifndef ARRAY_INIT_SIZE
+#define ARRAY_INIT_SIZE 16
+#endif
+
+// ndr parameter
+#ifndef NUM_DIRECTION_RAYS
+#define NUM_DIRECTION_RAYS 8
+#endif
+
+// G parameter
 #ifndef GRAVITY
 #define GRAVITY 1.985f
 #endif
 
-// d parameter
-#ifndef COMFY_DIST
-#define COMFY_DIST 4.8f
+// g_lim parameter
+#ifndef GOAL_LIMIT
+#define GOAL_LIMIT 30.0f
 #endif
 
-// r parameter
-#ifndef REGION_SIZE
-#define REGION_SIZE 22.5f
+// g_sig parameter
+#ifndef GOAL_SIGMA
+#define GOAL_SIGMA -3.0f
 #endif
 
-// dr parameter
-#ifndef DRONE_REGION_SIZE
-#define DRONE_REGION_SIZE 2.4f
+// g_gam parameter
+#ifndef GOAL_GAMMA
+#define GOAL_GAMMA 25.0f
 #endif
 
-// am parameter -> ka = g * am
-#ifndef ATTRECTION_MULTIPLIER
-#define ATTRECTION_MULTIPLIER 4.4f
+// d_tc parameter
+#ifndef DANGER_TO_CLOSE
+#define DANGER_TO_CLOSE 8.0f
+
+// d_lim parameter
+#ifndef DANGER_LIMIT
+#define DANGER_LIMIT 40.0f
 #endif
 
-// rm parameter -> kb = g * rm
-#ifndef REPULSION_MULTIPLIER
-#define REPULSION_MULTIPLIER 4.4f
+// d_co parameter
+#ifndef DANGER_CUT_OFF
+#define DANGER_CUT_OFF 5.0f
 #endif
 
-// dam parameter -> kad = g * dam
-#ifndef DRONE_ATTRECTION_MULTIPLIER
-#define DRONE_ATTRECTION_MULTIPLIER 0.3f
+// d_sig parameter
+#ifndef DANGER_SIGMA
+#define DANGER_SIGMA 3.85f
 #endif
 
-// drm parameter -> kbd = g * drm
-#ifndef DRONE_REPULSION_MULTIPLIER
-#define DRONE_REPULSION_MULTIPLIER 1.0f
+// d_gam parameter
+#ifndef DANGER_GAMMA
+#define DANGER_GAMMA 18.5f
 #endif
 
-// velocity limit parameter
-#ifndef VELOCITY_LIMIT
-#define VELOCITY_LIMIT 5.0f
+// d_alf parameter
+#ifndef DANGER_ALPHA
+#define DANGER_ALPHA 20.0f
+#endif
+
+// da_lim parameter
+#ifndef DRONE_ATT_LIMIT
+#define DRONE_ATT_LIMIT 40.0f
+#endif
+
+// da_co parameter
+#ifndef DRONE_ATT_CUT_OFF
+#define DRONE_ATT_CUT_OFF 18.9f
+#endif
+
+// da_sd parameter
+#ifndef SWARM_DIST
+#define SWARM_DIST 12.0f
+
+// dr_dtc parameter
+#ifndef DRONE_TO_CLOSE
+#define DRONE_TO_CLOSE 4.0f
+
+// dr_lim parameter
+#ifndef DRONE_REP_LIMIT
+#define DRONE_REP_LIMIT 30.0f
+#endif
+
+// dr_sig parameter
+#ifndef DRONE_REP_SIGMA
+#define DRONE_REP_SIGMA 10.0f
+#endif
+
+// dr_gam parameter
+#ifndef DRONE_REP_GAMMA
+#define DRONE_REP_GAMMA 1.5f
+#endif
+
+// dr_alf parameter
+#ifndef DRONE_REP_ALPHA
+#define DRONE_REP_ALPHA 0.1f
 #endif
 
 #ifndef SWARM_WAYPOINT_ID
 #error "Please define SWARM_WAYPOINT_ID with the ID of FOLLOW wp"
 #endif
 
-#ifndef FIRST_ATTRACTION_POINT_ID
-#error "Please define the FIRST_ATTRACTION_POINT_ID"
+#ifndef FIRST_GOAL_POINT_ID
+#error "Please define the FIRST_GOAL_POINT_ID"
 #endif
 
-#ifndef LAST_ATTRACTION_POINT_ID
-#error "Please define the LAST_ATTRACTION_POINT_ID"
+#ifndef LAST_GOAL_POINT_ID
+#error "Please define the LAST_GOAL_POINT_ID"
 #endif
 
-#ifndef FIRST_REPELL_POINT_ID
-#error "Please define the  FIRST_REPELL_POINT_ID"
+#ifndef FIRST_DANGER_POINT_ID
+#error "Please define the  FIRST_DANGER_POINT_ID"
 #endif
 
-#ifndef LAST_REPELL_POINT_ID
+#ifndef LAST_DANGER_POINT_ID
 #error "Please define the  LAST_REPELL_POINT_ID"
 #endif
 
@@ -127,6 +179,99 @@
 #ifndef LAST_SWARM_MEMBER_ID
 #error "Please define the LAST_SWARM_MEMBER_ID"
 #endif
+
+
+
+typedef struct Point {
+  float x;
+  float y;
+  float z;
+} Point;
+
+Point sub_points(Point* a, Point* b)
+{ return {(a->x - b->x), (a->y - b->y), (a->z - b->z)}; }
+
+Point add_points(Point* a, Point* b)
+{ return {(a->x + b->x), (a->y + b->y), (a->z + b->z)}; }
+
+Point mult_points(Point* a, Point* b)
+{ return {(a->x * b->x), (a->y * b->y), (a->z * b->z)}; }
+
+Point div_points(Point* a, Point* b)
+{ return {(a->x / b->x), (a->y / b->y), (a->z / b->z)}; }
+
+Point scale_up_points(Point* a, float s)
+{ return {(a->x * s), (a->y * s), (a->z * s)}; }
+
+Point scale_down_points(Point* a, float s)
+{ return {(a->x / s), (a->y / s), (a->z / s)}; }
+
+float dot(Point* a, Point* b)
+{ return (a->x*b->x + a->y*b->y + a->z*b->z); }
+
+float mag(Point* a)
+{ return sqrtf(a->x*a->x + a->y*a->y + a->z*a->z); }
+
+float cosine_sim(Point* a, Point* b)
+{ return dot(a,b)/(mag(a)*mag(b)); }
+
+float dist_points(Point* a, Point* b)
+{ 
+  Point dist = sub_points(a,b); 
+  return sqrtf(dist.x*dist.x+dist.y*dist.y+dist.z*dist.z); 
+}
+
+Point strongest_force(Point* a, Point* b)
+{
+  if(mag(a)>mag(b)) return *a;
+  return *b; 
+}
+
+
+typedef struct Point_Array {
+  uint8_t size;
+  uint8_t allocated;
+  Point* content;
+} Point_Array;
+
+bool append(Point_Array* arr, Point item)
+{
+  if (!arr->content)
+  {
+    arr->content = malloc(arr->allocated * sizeof(Point));
+    if (!arr->content) return -1;
+  }
+  else if (arr->size >= arr->allocated)
+  {
+    arr->allocated = arr->size+ARRAY_INIT_SIZE;
+    int *tmp = realloc(arr->content,arr->allocated*sizeof(Point));
+    if (!tmp) return false;
+    arr->content = tmp;
+  }
+
+  arr->content[arr->size] = item;
+  arr->size++;
+  return true;
+}
+
+bool fit_to_size(struct Point_Array *arr)
+{
+  arr->allocated = arr->size;
+  int *tmp = realloc(arr->content,arr->allocated*sizeof(Point));
+  if (!tmp) return false;
+
+  arr->content = tmp;
+  return true;
+}
+
+void reset(struct Point_Array *arr)
+{
+  free(arr->content);
+  arr->content = NULL;
+  arr->size = 0;
+  arr->allocated = ARRAY_INIT_SIZE;
+}
+
 
 
 struct Message_Debug {
@@ -157,36 +302,41 @@ static struct Message_Goal syncLink = {0,{0.0f,0.0f,0.0f},false};
 static struct LlaCoor_f att_point = {0.0f,0.0f,0.0f};
 static struct LlaCoor_f current_pos = {0.0f,0.0f,0.0f};
 
+
 //LlaCoor_f = {lat,lon,alt} specified in radients in a floating point number format(as specified in the paparazzi documentation)
 //LlaCoor_i = {lat,lon,alt} specified in degrees in an integer format(as specified in the paparazzi documentation)
 //EnuCoor_i = {lat,lon,alt} specified in meters in an integer format(as specified in the paparazzi documentation)
 //EnuCoor_f = {lat,lon,alt} specified in meters in an floating point number format(as specified in the paparazzi documentation)
 
 
-/** Get position in local ENU coordinates (float).
- * @param[in] ac_id aircraft id of aircraft info to get
- */
-static struct EnuCoor_f *getPositionEnu_f(uint8_t ac_id)
+static void send_acc_info(struct transport_tx *trans, struct link_device *dev) 
+{	pprz_msg_send_ACC(trans, dev, AC_ID, &acc.x, &acc.y, &acc.z); }
+
+static void send_goal_info(struct transport_tx *trans, struct link_device *dev) 
+{	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.wp_id, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached); }
+
+static void send_attract_and_repulse_info(struct transport_tx *trans, struct link_device *dev) 
+{ pprz_msg_send_ATTREP(trans, dev, AC_ID, &msg.own_pos.x, &msg.own_pos.y, &msg.own_pos.z, &msg.target_pos.x, &msg.target_pos.y, &msg.target_pos.z, &msg.target_ac_id, &msg.attraction_force.x, &msg.attraction_force.y, &msg.attraction_force.z, &msg.attraction_d, &msg.attraction_strength, (uint8_t*)&msg.attraction, &msg.repulsion_force.x, &msg.repulsion_force.y, &msg.repulsion_force.z, &msg.repulsion_d, &msg.repulsion_strength, (uint8_t*)&msg.repulsion); }
+
+void swarm_init(void) 
 {
-  return (ti_acs[ti_acs_id[ac_id]].ac_id != ac_id)? NULL: acInfoGetPositionEnu_f(ac_id);
-}
-
-static void send_acc_info(struct transport_tx *trans, struct link_device *dev) {
-	pprz_msg_send_ACC(trans, dev, AC_ID, &acc.x, &acc.y, &acc.z);
-}
-
-static void send_goal_info(struct transport_tx *trans, struct link_device *dev) {
-	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.wp_id, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached);
-}
-
-static void send_attract_and_repulse_info(struct transport_tx *trans, struct link_device *dev) {
-  pprz_msg_send_ATTREP(trans, dev, AC_ID, &msg.own_pos.x, &msg.own_pos.y, &msg.own_pos.z, &msg.target_pos.x, &msg.target_pos.y, &msg.target_pos.z, &msg.target_ac_id, &msg.attraction_force.x, &msg.attraction_force.y, &msg.attraction_force.z, &msg.attraction_d, &msg.attraction_strength, (uint8_t*)&msg.attraction, &msg.repulsion_force.x, &msg.repulsion_force.y, &msg.repulsion_force.z, &msg.repulsion_d, &msg.repulsion_strength, (uint8_t*)&msg.repulsion);
-}
-
-void swarm_init(void) {
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GOAL_ACHIEVED, send_goal_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACC, send_acc_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATTREP, send_attract_and_repulse_info);
+}
+
+//updates the content of the periodicly sent goal_achieved message
+static void updateSyncLinkMsg(struct LlaCoor_f* own_pos, uint8_t att_point_id)
+{
+    if(getDistance(own_pos, &att_point)<=16.25f)
+    {
+      syncLink.wp_id = att_point_id;
+      syncLink.own_pos.lat = own_pos->lat;
+      syncLink.own_pos.lon = own_pos->lon;
+      syncLink.own_pos.alt = own_pos->alt;
+      syncLink.reached = true;
+    }
+    else syncLink.reached = false;
 }
 
 
@@ -208,19 +358,96 @@ static struct LlaCoor_f toFloatPointFormat(struct LlaCoor_i* point)
   return res;
 }
 
-//updates the content of the periodicly sent goal_achieved message
-static void updateSyncLinkMsg(struct LlaCoor_f* own_pos, uint8_t att_point_id)
+/** Get position in local ENU coordinates (float).
+ * @param[in] ac_id aircraft id of aircraft info to get
+ */
+static struct EnuCoor_f *getPositionEnu_f(uint8_t ac_id)
+{ return (ti_acs[ti_acs_id[ac_id]].ac_id != ac_id)? NULL: acInfoGetPositionEnu_f(ac_id); }
+
+
+
+//context Steering behavior
+void context_steering()
 {
-    if(getDistance(own_pos, &att_point)<=16.25f)
+  //init vars
+  Point_Array alignment_forces = {0,ARRAY_INIT_SIZE,NULL};
+  Point pos  = {getPositionEnu_f(AC_ID).x, getPositionEnu_f(AC_ID).y, getPositionEnu_f(AC_ID).z}; 
+  Point max_intrest_forces[NUM_DIRECTION_RAYS];
+  Point max_danger_forces[NUM_DIRECTION_RAYS];
+  Point max_member_atts[NUM_DIRECTION_RAYS];
+  Point max_member_reps[NUM_DIRECTION_RAYS];
+  bool mask[NUM_DIRECTION_RAYS];
+  for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
+  {
+    max_intrest_forces[idx] = {0,0,0};
+    max_member_atts[idx] = {0,0,0};
+    max_member_reps[idx] = {0,0,0};
+    max_danger_forces[idx] = {0,0,0};
+    mask[idx] = true;
+  }
+  
+  /*
+   +++++++++++++++
+   + Preparation +
+   +++++++++++++++
+  
+   create all direction segements for each map based on maximum magnitude force 
+   and a mask based on distance
+  */
+  for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
+  {
+    //GOAL MAP
+    for(uint8_t wp_id = FIRST_GOAL_POINT_ID; wp_id < LAST_GOAL_POINT_ID; ++wp_id)
     {
-      syncLink.wp_id = att_point_id;
-      syncLink.own_pos.lat = own_pos->lat;
-      syncLink.own_pos.lon = own_pos->lon;
-      syncLink.own_pos.alt = own_pos->alt;
-      syncLink.reached = true;
+      Point goal = {waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT};
+      if(cosine_sim(this.RAY_DIRS.get(idx), sub_points(&goal,&pos)) >= this.SECTOR_COS_SIM) 
+        max_interest_forces[idx] = strongest_force(&max_interest_forces[idx],&linear_Attraction(&pos,&goal,GOAL_LIMIT,GOAL_SIGMA,GOAL_GAMMA));
     }
-    else syncLink.reached = false;
+
+    //DRONE MAPS & MASK
+    for(uint8_t ac_id = FIRST_SWARM_MEMBER_ID; ac_id <= LAST_SWARM_MEMBER_ID; ++ac_id)
+    {
+      struct EnuCoor_f *ac_pos = getPositionEnu_f(ac_id);
+      if(ac_id != AC_ID && ac_pos != NULL) 
+      {
+        Point other = {ac_pos->x,ac_pos->y,ac_pos->z};
+        if(cosine_sim(this.RAY_DIRS.get(idx), sub_points(&other,&pos)) >= this.SECTOR_COS_SIM) 
+        {
+          float member_dist = dist_points(&other,&pos);
+          if(member_dist<=DRONE_TO_CLOSE) mask[idx] = false;
+          else if (member_dist<=SWARM_DIST) append(&alignment_forces,other.vel);
+          max_member_atts[idx] = strongest_force(&max_member_atts[idx],&log_Attraction(&pos,&other,DRONE_ATT_LIMIT,DRONE_ATT_CUT_OFF)); 
+        }
+        if(cosine_sim(this.RAY_DIRS.get(idx), sub_points(&other,&pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
+          max_member_reps[idx] = strongest_force(&max_member_reps[idx],&linear_Repulsion(&pos,&other,DRONE_REP_LIMIT,DRONE_REP_SIGMA,DRONE_REP_GAMMA,DRONE_REP_ALPHA)); 
+      }
+    }
+
+    //DANGER MAP & MASK
+    for(uint8_t wp_id = FIRST_DANGER_POINT_ID; wp_id < LAST_DANGER_POINT_ID; ++wp_id)
+    {
+      Point danger = {waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT};
+      if(cosine_sim(this.RAY_DIRS.get(idx), sub_points(&danger,&pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
+        max_danger_forces[idx]=strongest_force(&danger_forces[idx],limExp_Repulsion(&pos,&danger,DANGER_LIMIT,DANGER_CUT_OFF,DANGER_SIGMA,DANGER_GAMMA,DANGER_ALPHA));
+      else if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM)
+      {
+        float member_dist = dist_points(&danger,&pos);
+        if(member_dist<=DANGER_TO_CLOSE) mask[idx] = false; 
+      }
+    }
+  }
+
+  /*
+   ++++++++++++++
+   + Evaluation +
+   ++++++++++++++
+  
+   evaluate context steering behavior
+   edit: copy and paste from java code
+  */
+  drone.context_steering(this.RAY_DIRS,this.SECTOR_COS_SIM);
 }
+
 
 
 //attraction_force = ka/distance * dist_vec
