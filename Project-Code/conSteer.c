@@ -50,6 +50,11 @@
 #define FLIGHT_HEIGHT 47.0f
 #endif
 
+// maximal speed that the drone can fly
+#ifndef MAX_SPEED
+#define MAX_SPEED 5.0f
+#endif
+
 // radius of the globe
 #ifndef GLOBE_RADIUS
 #define GLOBE_RADIUS 6371000
@@ -70,6 +75,11 @@
 #define GRAVITY 1.985f
 #endif
 
+// g_mult parameter
+#ifndef GOAL_MULT
+#define GOAL_MULT 1.75f
+#endif
+
 // g_lim parameter
 #ifndef GOAL_LIMIT
 #define GOAL_LIMIT 30.0f
@@ -85,9 +95,15 @@
 #define GOAL_GAMMA 25.0f
 #endif
 
+// d_mult parameter
+#ifndef DANGER_MULT
+#define DANGER_MULT 1.75f
+#endif
+
 // d_tc parameter
 #ifndef DANGER_TO_CLOSE
 #define DANGER_TO_CLOSE 8.0f
+#endif
 
 // d_lim parameter
 #ifndef DANGER_LIMIT
@@ -114,6 +130,11 @@
 #define DANGER_ALPHA 20.0f
 #endif
 
+// da_mult parameter
+#ifndef DRONE_MULT
+#define DRONE_ATT_MULT 4.0f
+#endif
+
 // da_lim parameter
 #ifndef DRONE_ATT_LIMIT
 #define DRONE_ATT_LIMIT 40.0f
@@ -127,10 +148,17 @@
 // da_sd parameter
 #ifndef SWARM_DIST
 #define SWARM_DIST 12.0f
+#endif
 
 // dr_dtc parameter
 #ifndef DRONE_TO_CLOSE
 #define DRONE_TO_CLOSE 4.0f
+#endif
+
+// dr_mult parameter
+#ifndef DRONE_MULT
+#define DRONE_REP_MULT 4
+#endif
 
 // dr_lim parameter
 #ifndef DRONE_REP_LIMIT
@@ -188,6 +216,12 @@ typedef struct Point {
   float z;
 } Point;
 
+Point from_angle(float radians)
+{ return {cosf(radians),sinf(radians),0.0f}; }
+
+Point rotate2D(Point* a, float radians)
+{ return {cosf(radians)*a->x - sinf(radians)*a->y,cosf(radians)*a->x + sinf(radians)*a->y, a->z}; }
+
 Point sub_points(Point* a, Point* b)
 { return {(a->x - b->x), (a->y - b->y), (a->z - b->z)}; }
 
@@ -228,51 +262,6 @@ Point strongest_force(Point* a, Point* b)
 }
 
 
-typedef struct Point_Array {
-  uint8_t size;
-  uint8_t allocated;
-  Point* content;
-} Point_Array;
-
-bool append(Point_Array* arr, Point item)
-{
-  if (!arr->content)
-  {
-    arr->content = malloc(arr->allocated * sizeof(Point));
-    if (!arr->content) return -1;
-  }
-  else if (arr->size >= arr->allocated)
-  {
-    arr->allocated = arr->size+ARRAY_INIT_SIZE;
-    int *tmp = realloc(arr->content,arr->allocated*sizeof(Point));
-    if (!tmp) return false;
-    arr->content = tmp;
-  }
-
-  arr->content[arr->size] = item;
-  arr->size++;
-  return true;
-}
-
-bool fit_to_size(struct Point_Array *arr)
-{
-  arr->allocated = arr->size;
-  int *tmp = realloc(arr->content,arr->allocated*sizeof(Point));
-  if (!tmp) return false;
-
-  arr->content = tmp;
-  return true;
-}
-
-void reset(struct Point_Array *arr)
-{
-  free(arr->content);
-  arr->content = NULL;
-  arr->size = 0;
-  arr->allocated = ARRAY_INIT_SIZE;
-}
-
-
 
 struct Message_Debug {
    struct EnuCoor_f own_pos;
@@ -296,7 +285,11 @@ struct Message_Goal {
    bool reached;
 };
 
-static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
+static Point DIRECTION_RAYS[NUM_DIRECTION_RAYS];
+static Point SECTOR_COS_SIM = cosf(Pi/NUM_DIRECTION_RAYS);
+static Point acc = {0.0f, 0.0f, 0.0f};
+static Point vel = {0.0f, 0.0f, 0.0f};
+static Point pos = {0.0f, 0.0f, 0.0f};
 static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
 static struct Message_Goal syncLink = {0,{0.0f,0.0f,0.0f},false};
 static struct LlaCoor_f att_point = {0.0f,0.0f,0.0f};
@@ -320,6 +313,11 @@ static void send_attract_and_repulse_info(struct transport_tx *trans, struct lin
 
 void swarm_init(void) 
 {
+  for(int it=0; it<NUM_DIRECTION_RAYS; ++it)
+  {
+    float angle = it * (2*Pi)/NUM_DIRECTION_RAYS;
+    DIRECTION_RAYS[it] = from_Angle(angle);
+  }
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GOAL_ACHIEVED, send_goal_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACC, send_acc_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATTREP, send_attract_and_repulse_info);
@@ -369,226 +367,159 @@ static struct EnuCoor_f *getPositionEnu_f(uint8_t ac_id)
 //context Steering behavior
 void context_steering()
 {
-  //init vars
-  Point_Array alignment_forces = {0,ARRAY_INIT_SIZE,NULL};
-  Point pos  = {getPositionEnu_f(AC_ID).x, getPositionEnu_f(AC_ID).y, getPositionEnu_f(AC_ID).z}; 
-  Point max_intrest_forces[NUM_DIRECTION_RAYS];
-  Point max_danger_forces[NUM_DIRECTION_RAYS];
-  Point max_member_atts[NUM_DIRECTION_RAYS];
-  Point max_member_reps[NUM_DIRECTION_RAYS];
+  /*
+    ++++++++++++++++++++++++
+    + Initialize Variables +
+    ++++++++++++++++++++++++
+  */
+  pos = {getPositionEnu_f(AC_ID).x, getPositionEnu_f(AC_ID).y, getPositionEnu_f(AC_ID).z}; 
+  vel = {acInfoGetVelocityEnu_f(AC_ID).x,acInfoGetVelocityEnu_f(AC_ID).y,acInfoGetVelocityEnu_f(AC_ID).z};
+  struct EnuCoor_f *ac_pos;
+  Point danger, goal, other_pos, other_vel;
+  Point alignment_force = scale_up_points(vel,1.0f);
+  Point resulting_force = {0.0f,0.0f,0.0f};
+  Point max_intrest_forces[NUM_DIRECTION_RAYS], max_danger_forces[NUM_DIRECTION_RAYS];
+  Point max_member_atts[NUM_DIRECTION_RAYS], max_member_reps[NUM_DIRECTION_RAYS];
+  Point total_forces[NUM_DIRECTION_RAYS];
   bool mask[NUM_DIRECTION_RAYS];
+  float member_dist, alignSim, constrainSim, rightMag, leftMag, magnitude; 
+  float alignment_counter = 1.0f;
+  int leftIdx,rightIdx,neighborIdx;
+  int maxIdx = 0;
   for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
   {
     max_intrest_forces[idx] = {0,0,0};
     max_member_atts[idx] = {0,0,0};
     max_member_reps[idx] = {0,0,0};
     max_danger_forces[idx] = {0,0,0};
+    total_forces[idx] = {0.0f,0.0f,0.0f};
     mask[idx] = true;
   }
+
   
   /*
-   +++++++++++++++
-   + Preparation +
-   +++++++++++++++
+   +++++++++++++++++++++++++++
+   + Context Map Preparation +
+   +++++++++++++++++++++++++++
   
    create all direction segements for each map based on maximum magnitude force 
-   and a mask based on distance
+   and create a mask based on distance
   */
   for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
   {
     //GOAL MAP
     for(uint8_t wp_id = FIRST_GOAL_POINT_ID; wp_id < LAST_GOAL_POINT_ID; ++wp_id)
     {
-      Point goal = {waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT};
-      if(cosine_sim(this.RAY_DIRS.get(idx), sub_points(&goal,&pos)) >= this.SECTOR_COS_SIM) 
+      goal = {waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT};
+      if(cosine_sim(&DIRECTION_RAYS[idx], sub_points(&goal,&pos)) >= SECTOR_COS_SIM) 
         max_interest_forces[idx] = strongest_force(&max_interest_forces[idx],&linear_Attraction(&pos,&goal,GOAL_LIMIT,GOAL_SIGMA,GOAL_GAMMA));
     }
 
     //DRONE MAPS & MASK
     for(uint8_t ac_id = FIRST_SWARM_MEMBER_ID; ac_id <= LAST_SWARM_MEMBER_ID; ++ac_id)
     {
-      struct EnuCoor_f *ac_pos = getPositionEnu_f(ac_id);
+      ac_pos = getPositionEnu_f(ac_id);
       if(ac_id != AC_ID && ac_pos != NULL) 
       {
-        Point other = {ac_pos->x,ac_pos->y,ac_pos->z};
-        if(cosine_sim(this.RAY_DIRS.get(idx), sub_points(&other,&pos)) >= this.SECTOR_COS_SIM) 
+        other_pos = {ac_pos->x,ac_pos->y,ac_pos->z};
+        if(cosine_sim(&DIRECTION_RAYS[idx], sub_points(&other_pos,&pos)) >= SECTOR_COS_SIM) 
         {
-          float member_dist = dist_points(&other,&pos);
+          member_dist = dist_points(&other_pos,&pos);
           if(member_dist<=DRONE_TO_CLOSE) mask[idx] = false;
-          else if (member_dist<=SWARM_DIST) append(&alignment_forces,other.vel);
-          max_member_atts[idx] = strongest_force(&max_member_atts[idx],&log_Attraction(&pos,&other,DRONE_ATT_LIMIT,DRONE_ATT_CUT_OFF)); 
+          else if (member_dist<=SWARM_DIST) 
+          {
+            other_vel = {acInfoGetVelocityEnu_f(ac_id).x,acInfoGetVelocityEnu_f(ac_id).y,acInfoGetVelocityEnu_f(ac_id).z};
+            alignment_force = add_points(&alignment_force,&other_vel);
+            alignment_counter+=1.0f;
+          }
+          max_member_atts[idx] = strongest_force(&max_member_atts[idx],&log_Attraction(&pos,&other_pos,DRONE_ATT_LIMIT,DRONE_ATT_CUT_OFF)); 
         }
-        if(cosine_sim(this.RAY_DIRS.get(idx), sub_points(&other,&pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
-          max_member_reps[idx] = strongest_force(&max_member_reps[idx],&linear_Repulsion(&pos,&other,DRONE_REP_LIMIT,DRONE_REP_SIGMA,DRONE_REP_GAMMA,DRONE_REP_ALPHA)); 
+        if(cosine_sim(&DIRECTION_RAYS[idx], rotate(&sub_points(&other_pos,&pos),Pi)) >= SECTOR_COS_SIM)
+          max_member_reps[idx] = strongest_force(&max_member_reps[idx],&linear_Repulsion(&pos,&other_pos,DRONE_REP_LIMIT,DRONE_REP_SIGMA,DRONE_REP_GAMMA,DRONE_REP_ALPHA)); 
       }
     }
 
     //DANGER MAP & MASK
     for(uint8_t wp_id = FIRST_DANGER_POINT_ID; wp_id < LAST_DANGER_POINT_ID; ++wp_id)
     {
-      Point danger = {waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT};
-      if(cosine_sim(this.RAY_DIRS.get(idx), sub_points(&danger,&pos).rotate(PI)) >= this.SECTOR_COS_SIM) 
+      danger = {waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT};
+      if(cosine_sim(&DIRECTION_RAYS[idx], rotate(&sub_points(&danger,&pos),Pi)) >= SECTOR_COS_SIM)
         max_danger_forces[idx]=strongest_force(&danger_forces[idx],limExp_Repulsion(&pos,&danger,DANGER_LIMIT,DANGER_CUT_OFF,DANGER_SIGMA,DANGER_GAMMA,DANGER_ALPHA));
-      else if(cosine_sim(this.RAY_DIRS.get(idx), PVector.sub(danger,drone.pos)) >= this.SECTOR_COS_SIM)
-      {
-        float member_dist = dist_points(&danger,&pos);
-        if(member_dist<=DANGER_TO_CLOSE) mask[idx] = false; 
-      }
+      else if((cosine_sim(&DIRECTION_RAYS[idx], PVector.sub(danger,drone.pos)) >= SECTOR_COS_SIM) && (dist_points(&danger,&pos)<=DANGER_TO_CLOSE)) 
+        mask[idx] = false; 
     }
   }
+
 
   /*
-   ++++++++++++++
-   + Evaluation +
-   ++++++++++++++
+   ++++++++++++++++++++++++++
+   + Context Map Evaluation +
+   ++++++++++++++++++++++++++
   
    evaluate context steering behavior
-   edit: copy and paste from java code
   */
-  drone.context_steering(this.RAY_DIRS,this.SECTOR_COS_SIM);
-}
 
-
-
-//attraction_force = ka/distance * dist_vec
-static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float multiplier)
-{
-  struct EnuCoor_f force = {
-  	pos_ac->x - own_pos->x,
-  	pos_ac->y - own_pos->y,
-  	0.0f
-  };
-  msg.attraction_force = force;
-
-  float d = sqrtf(force.x*force.x + force.y*force.y);
-  msg.attraction_d = d;
-  msg.attraction = true;
-
-  d = fmaxf(1.0f,d);
-  float strength = GRAVITY * multiplier/d;
-  msg.attraction_strength = strength;
-
-  force.x = force.x * strength;
-  force.y = force.y * strength;
-  msg.attraction_force = force;
-
-  acc->x += force.x;
-  acc->y += force.y;
-}
-
-//repulsion_force = (kb*exp(-distance²/2r²)) * dist_vec
-static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, float multiplier)
-{
-  struct EnuCoor_f force = {
-  	pos_ac->x - own_pos->x,
-  	pos_ac->y - own_pos->y,
-  	0.0f
-  };
-  msg.repulsion_force = force;
-
-  float d = sqrtf(force.x*force.x + force.y*force.y);
-  msg.repulsion_d = d;
-  msg.repulsion = true;
-
-  float strength = (GRAVITY * multiplier) * expf(-(d*d)/(2 * perlimiter * perlimiter));
-  msg.repulsion_strength = strength;
-
-  force.x = force.x * strength;
-  force.y = force.y * strength;
-  msg.repulsion_force = force;
-
-  acc->x -= force.x;
-  acc->y -= force.y;
-}
-
-//total_force = (kad*(distance-d)/max(distance,0.01) - kbd*exp(-distance²/(dr²/log(kbd/kad)))) * dist_vec
-static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float reg_size, float comfy_dist, float att_multiplier, float rep_multiplier)
-{
-    struct EnuCoor_f force = {
-            pos_ac->x - own_pos->x,
-            pos_ac->y - own_pos->y,
-            0.0f
-    };
-    msg.repulsion_force = force;
-    msg.attraction_force = force;
-
-    float d = sqrtf(force.x*force.x + force.y*force.y);
-    float c = (reg_size * reg_size)/logf(rep_multiplier/att_multiplier);
-    msg.repulsion_d = d;
-    msg.attraction_d = d;
-    msg.repulsion = true;
-    msg.attraction = true;
-
-    float strength_att = (GRAVITY * att_multiplier) * ((d - comfy_dist) / fmax(d, 0.01f));
-    float strength_rep = (GRAVITY * rep_multiplier) * expf(-(d*d)/c);
-    msg.attraction_strength = strength_att;
-    msg.repulsion_strength = strength_rep;
-
-    force.x = force.x * (strength_att - strength_rep);
-    force.y = force.y * (strength_att - strength_rep);
-    msg.attraction_force = force;
-    msg.repulsion_force = force;
-
-    acc->x += force.x;
-    acc->y += force.y;
-}
-
-/*
- * swarm_follow_wp(void)
- * updates the FOLLOW_WAYPOINT_ID to a fixed offset from the last received location
- * of other aircraft with id FOLLOW_AC_ID
- */
-void swarm_follow_wp(void)
-{
-  acc.x = 0.0f;
-  acc.y = 0.0f;
-  acc.z = 0.0f;
-
-  struct EnuCoor_f *own_pos = stateGetPositionEnu_f();
-  msg.own_pos = *own_pos;
-
-  for(uint8_t ac_id = FIRST_SWARM_MEMBER_ID; ac_id <= LAST_SWARM_MEMBER_ID; ++ac_id)
+  //calculate total forces with respect to context map weightings and swarm alignment
+  alignment_force = scale_down_points(&alignment_force,alignment_counter);
+  for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
   {
-    struct EnuCoor_f *ac_pos = getPositionEnu_f(ac_id);
-    if(ac_pos != NULL && ac_id != AC_ID) {
-        msg.target_pos = *ac_pos;
-        msg.target_ac_id = ac_id;        
-        attRep(own_pos, ac_pos, &acc, DRONE_REGION_SIZE, COMFY_DIST, DRONE_ATTRECTION_MULTIPLIER, DRONE_REPULSION_MULTIPLIER);
-    }
-    else
+    total_forces[idx] = scale_up_points(&add_points(&max_intrest_forces[idx],GOAL_MULT));
+    total_forces[idx] = scale_up_points(&add_points(&max_member_atts[idx]),DRONE_ATT_MULT));
+    total_forces[idx] = scale_up_points(&add_points(&max_member_reps[idx]),DRONE_REP_MULT));
+    total_forces[idx] = scale_up_points(&add_points(&max_danger_forces[idx]),DANGER_MULT));
+
+    /* ----------------------------------------------------------------------
+     * Danger Mask already exist and probably not applicable in current setup
+     * ----------------------------------------------------------------------
+     * //danger based mask
+     * if(cosine_sim(&DIRECTION_RAYS[idx],&total_forces[idx]) < 0.0) mask[idx]=false;
+     */
+    
+    //more likely to perform alignment otherwise less likely to switch directions
+    alignSim = cosine_sim(&DIRECTION_RAYS[idx],&alignment_force);
+    constrainSim = fmaxf(SECTOR_COS_SIM,cosine_sim(&alignment_force,&vel));
+    if(alignSim < constrainSim) total_force[idx]=scale_up_points(&total_force[idx],alignSim*((0.25-1.0)/(-1.0-constrainSim)));
+  }
+
+  //select strongest force as main force direction
+  while((maxIdx < NUM_DIRECTION_RAYS) && !mask[maxIdx]) maxIdx+=1;
+  for(int idx=maxIdx+1; idx<NUM_DIRECTION_RAYS; ++idx) 
+    if(mask[idx] && (mag(&total_forces[idx]) > mag(&total_forces[maxIdx]))) 
+      maxIdx = idx;
+  if(maxIdx < NUM_DIRECTION_RAYS)
+  {
+    resulting_force = scale_up_points(&DIRECTION_RAYS[maxIdx],MAX_SPEED);
+
+    //interpolate between main and strongest neighboring force
+    magnitude = mag(&total_forces[maxIdx]);
+    if(magnitude>1.0f) 
     {
-      msg.target_ac_id = 0;
-      msg.attraction = false;
-      msg.repulsion = false;
+      leftIdx = (maxIdx-1 + NUM_DIRECTION_RAYS)%NUM_DIRECTION_RAYS;
+      rightIdx = (maxIdx+1 + NUM_DIRECTION_RAYS)%NUM_DIRECTION_RAYS;
+      leftMag = mag(&total_forces[leftIdx]); 
+      rightMag = mag(&total_forces[rightIdx]);
+      neighborIdx = (leftMag<rightMag && mask[rightIdx])? rightIdx: (mask[leftIdx])? leftIdx: -1;
+      if(neighborIdx>=0)
+      {
+        magnitude = mag(&total_forces[neighborIdx])/magnitude;
+        resulting_force = add_points(&resulting_force,&scale_up_points(&DIRECTION_RAYS[neighborIdx],MAX_SPEED*magnitude));
+      }
     }
-  }
+    else if(magnitude<0.1f) scale_up_points(&vel,0.0f);
+  } 
+  else scale_up_points(&vel,0.0f);
 
-  for(uint8_t wp_id = FIRST_ATTRACTION_POINT_ID; wp_id < LAST_ATTRACTION_POINT_ID; ++wp_id)
-  {
-    struct EnuCoor_f current_att_point = { 0.0f, 0.0f, 0.0f };
-    current_att_point.x = waypoint_get_x(wp_id);
-    current_att_point.y = waypoint_get_y(wp_id);
-    if(current_att_point.x != 0.0f && current_att_point.y != 0.0f)
-      attract(own_pos, &current_att_point, &acc, ATTRECTION_MULTIPLIER);
-  }
+  //set drone attributes accelleration, velocity, position
+  acc = scale_up_points(&resulting_force,(MAX_SPEED/mag(&resulting_force)));
 
-  for(uint8_t wp_id = FIRST_REPELL_POINT_ID; wp_id < LAST_REPELL_POINT_ID; ++wp_id)
-  {
-    struct EnuCoor_f current_rep_point = { 0.0f, 0.0f, 0.0f };
-    current_rep_point.x = waypoint_get_x(wp_id);
-    current_rep_point.y = waypoint_get_y(wp_id);
-    if(current_rep_point.x != 0.0f && current_rep_point.y != 0.0f)
-      repulse(own_pos, &current_rep_point, &acc, REGION_SIZE, REPULSION_MULTIPLIER);
-  }
-
-  struct EnuCoor_f* vel = acInfoGetVelocityEnu_f(AC_ID);
-  vel->x = VELOCITY_LIMIT * tanhf(vel->x+acc.x);
-  vel->y = VELOCITY_LIMIT * tanhf(vel->y+acc.y);
-  acInfoSetVelocityEnu_f(AC_ID,vel);
+  struct EnuCoor_f* velocity = acInfoGetVelocityEnu_f(AC_ID);
+  velocity->x = MAX_SPEED * tanhf(velocity->x+acc.x);
+  velocity->y = MAX_SPEED * tanhf(velocity->y+acc.y);
+  acInfoSetVelocityEnu_f(AC_ID,velocity);
 
   struct EnuCoor_i future_pos = *stateGetPositionEnu_i();
-  future_pos.x += POS_BFP_OF_REAL(vel->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
-  future_pos.y += POS_BFP_OF_REAL(vel->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
+  future_pos.x += POS_BFP_OF_REAL(velocity->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
+  future_pos.y += POS_BFP_OF_REAL(velocity->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
   future_pos.z = POS_BFP_OF_REAL(FLIGHT_HEIGHT);
 
   // Move the waypoints
