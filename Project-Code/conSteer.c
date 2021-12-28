@@ -364,6 +364,59 @@ static struct EnuCoor_f *getPositionEnu_f(uint8_t ac_id)
 
 
 
+
+
+//calculate repulsion forces to other drones
+Point linear_Repulsion(Point target, float limit, float sigma, float gamma, float alpha)
+{
+  Point force = sub_points(&target, &pos);
+  float magnitude = mag(&force);
+  float d = fminf(magnitude, limit);
+  float strength = max((sigma/(d+alpha)-gamma),0)*(-1);
+  force = scale_up_points(&force,(strength/magnitude));
+  return force;
+}
+
+// calculate attraction forces to other drones
+Point log_Attraction(Point target, float limit, float cutOff)
+{
+  Point force = sub_points(&target, &pos);
+  float magnitude = mag(&force);
+  float strength;
+  float d = fminf(magnitude, limit);
+  //strength = GRAVITY*d-10; //simple linear
+  if(d>cutOff) strength = log(d-(cutOff-GRAVITY/2))*GRAVITY; 
+  else strength = 0;
+  force = scale_up_points(&force,(strength/magnitude));
+  return force;
+}
+
+
+// calculate attraction forces with GOAL_VECTORS
+Point linear_Attraction(Point target, float limit, float sigma, float gamma)
+{
+  Point force = sub_points(&target, &pos);
+  float magnitude = mag(&force);
+  float d = fminf(magnitude, limit);
+  float strength = (GRAVITY/sigma)*d+gamma;
+  force = scale_up_points(&force,(strength/magnitude));
+  return force;
+}
+
+// calculate repulsion force with DANGER_VECTORS
+Point limExp_Repulsion(Point target, float limit, float cutOff, float sigma, float gamma, float alpha)
+{
+  Point force = sub_points(&target, &pos);
+  float magnitude = mag(&force);
+  float strength;
+  float d = fminf(magnitude, limit);
+  if (d<cutOff) strength = GRAVITY * (d/2 - limit) / sigma; //linear_rep_limit_close
+  else strength = -1*expf(-1*(GRAVITY * (alpha*logf(d) - gamma)/sigma)); //exp_rep_mid_far
+   force = scale_up_points(&force,(strength/magnitude));
+  return force;
+}
+
+
 //context Steering behavior
 void context_steering()
 {
