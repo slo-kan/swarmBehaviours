@@ -220,29 +220,35 @@ typedef struct Point {
 } Point;
 
 
+Point init_points(float x, float y, float z)
+{
+  Point new = {x,y,z};
+  return new;
+}
+
 Point from_angle(float radians)
-{ Point new = {cosf(radians),sinf(radians),0.0f}; return new; }
+{ return init_points(cosf(radians),sinf(radians),0.0f); }
 
 Point rotate2D(Point* a, float radians)
-{ Point new = {cosf(radians)*a->x - sinf(radians)*a->y,cosf(radians)*a->x + sinf(radians)*a->y, a->z}; }
+{ return init_points(cosf(radians)*a->x - sinf(radians)*a->y,cosf(radians)*a->x + sinf(radians)*a->y, a->z); }
 
 Point sub_points(Point* a, Point* b)
-{ Point new = {(a->x - b->x), (a->y - b->y), (a->z - b->z)}; return new; }
+{ return init_points((a->x - b->x), (a->y - b->y), (a->z - b->z)); }
 
 Point add_points(Point* a, Point* b)
-{ Point new = {(a->x + b->x), (a->y + b->y), (a->z + b->z)}; return new;}
+{ return init_points((a->x + b->x), (a->y + b->y), (a->z + b->z)); }
 
 Point mult_points(Point* a, Point* b)
-{ Point new = {(a->x * b->x), (a->y * b->y), (a->z * b->z)}; return new;}
+{ return init_points((a->x * b->x), (a->y * b->y), (a->z * b->z)); }
 
 Point div_points(Point* a, Point* b)
-{ Point new = {(a->x / b->x), (a->y / b->y), (a->z / b->z)}; return new;}
+{ return init_points((a->x / b->x), (a->y / b->y), (a->z / b->z)); }
 
 Point scale_up_points(Point* a, float s)
-{ Point new = {(a->x * s), (a->y * s), (a->z * s)}; return new;}
+{ return init_points((a->x * s), (a->y * s), (a->z * s)) }
 
 Point scale_down_points(Point* a, float s)
-{ Point new = {(a->x / s), (a->y / s), (a->z / s)}; }
+{ return init_points((a->x / s), (a->y / s), (a->z / s)); }
 
 float dot(Point* a, Point* b)
 { return (a->x*b->x + a->y*b->y + a->z*b->z); }
@@ -261,9 +267,16 @@ float dist_points(Point* a, Point* b)
 
 void set_points(Point* p, float x, float y, float z)
 { 
-  Point new = {x,y,z}; 
-  if(p!=NULL) *p = new; 
+  if(p!=NULL) 
+  {
+    p->x = x; 
+    p->y = y;
+    p->z = z;
+  }
 }
+
+void set_points(Point* p, Point* other)
+{ set_points(p,other.x,other.y,other.z); }
 
 Point strongest_force(Point* a, Point* b)
 {
@@ -297,7 +310,7 @@ struct Message_Goal {
 
 
 static float SECTOR_COS_SIM = cosf(Pi/NUM_DIRECTION_RAYS);
-static Point DIRECTION_RAYS[NUM_DIRECTION_RAYS];
+static Point DIRECTION_RAYS[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
 static Point acc = {0.0f, 0.0f, 0.0f};
 static Point vel = {0.0f, 0.0f, 0.0f};
 static Point pos = {0.0f, 0.0f, 0.0f};
@@ -327,7 +340,7 @@ void swarm_init(void)
   for(int it=0; it<NUM_DIRECTION_RAYS; ++it)
   {
     float angle = it * (2*Pi)/NUM_DIRECTION_RAYS;
-    set_points(&DIRECTION_RAYS[it],from_Angle(angle).x,from_Angle(angle).y,from_Angle(angle).z);
+    DIRECTION_RAYS[it] = from_Angle(angle);                                                                                                                                                                                                                                                         ;
   }
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GOAL_ACHIEVED, send_goal_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACC, send_acc_info);
@@ -442,25 +455,18 @@ void swarm_follow_wp(void)
   set_points(&vel, acInfoGetVelocityEnu_f(AC_ID)->x, acInfoGetVelocityEnu_f(AC_ID)->y, acInfoGetVelocityEnu_f(AC_ID)->z);
   struct EnuCoor_f *ac_pos;
   Point danger, goal, other_pos, other_vel;
-  Point alignment_force = scale_up_points(&vel,1.0f);
+  Point alignment_force; set_points(&alignment_force, &vel);
   Point resulting_force = {0.0f,0.0f,0.0f};
-  Point max_intrest_forces[NUM_DIRECTION_RAYS], max_danger_forces[NUM_DIRECTION_RAYS];
-  Point max_member_atts[NUM_DIRECTION_RAYS], max_member_reps[NUM_DIRECTION_RAYS];
-  Point total_forces[NUM_DIRECTION_RAYS];
-  bool mask[NUM_DIRECTION_RAYS];
+  Point max_intrest_forces[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
+  Point max_danger_forces[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
+  Point max_member_atts[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
+  Point max_member_reps[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
+  Point total_forces[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
+  bool mask[NUM_DIRECTION_RAYS] = {true};
   float member_dist, alignSim, constrainSim, rightMag, leftMag, magnitude; 
   float alignment_counter = 1.0f;
   int leftIdx,rightIdx,neighborIdx;
   int maxIdx = 0;
-  for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
-  {
-    set_points(&max_intrest_forces[idx],0,0,0);
-    set_points(&max_member_atts[idx],0,0,0);
-    set_points(&max_member_reps[idx],0,0,0);
-    set_points(&max_danger_forces[idx],0,0,0);
-    set_points(&total_forces[idx],0,0,0);
-    mask[idx] = true;
-  }
 
   
   /*
@@ -477,11 +483,10 @@ void swarm_follow_wp(void)
     for(uint8_t wp_id = FIRST_GOAL_POINT_ID; wp_id < LAST_GOAL_POINT_ID; ++wp_id)
     {
       set_points(&goal,waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT);
-      if(cosine_sim(&DIRECTION_RAYS[idx], &sub_points(&goal,&pos)) >= SECTOR_COS_SIM)
-      { 
-        Point shadow = strongest_force(&max_intrest_forces[idx],&linear_Attraction(&pos,&goal,GOAL_LIMIT,GOAL_SIGMA,GOAL_GAMMA));
-        set_points(&max_intrest_forces[idx],shadow.x,shadow.y,shadow.z);
-      }
+      if(cosine_sim(&DIRECTION_RAYS[idx], &sub_points(&goal,&pos)) >= SECTOR_COS_SIM) 
+        max_intrest_forces[idx] = strongest_force(&max_intrest_forces[idx],
+                                 &linear_Attraction(&pos,&goal,GOAL_LIMIT,GOAL_SIGMA,GOAL_GAMMA));
+      
     }
 
     //DRONE MAPS & MASK
@@ -501,13 +506,13 @@ void swarm_follow_wp(void)
             alignment_force = add_points(&alignment_force,&other_vel);
             alignment_counter+=1.0f;
           }
-          Point shadow = strongest_force(&max_member_atts[idx],&log_Attraction(&pos,&other_pos,DRONE_ATT_LIMIT,DRONE_ATT_CUT_OFF));
-          set_points(&max_member_atts[idx],shadow.x,shadow.y,shadow.z);
+          max_member_atts[idx] = strongest_force(&max_member_atts[idx],
+                                &log_Attraction(&pos,&other_pos,DRONE_ATT_LIMIT,DRONE_ATT_CUT_OFF));
         }
         if(cosine_sim(&DIRECTION_RAYS[idx], &rotate2D(&sub_points(&other_pos,&pos),Pi)) >= SECTOR_COS_SIM)
         {
-          Point shadow = strongest_force(&max_member_reps[idx],&linear_Repulsion(&pos,&other_pos,DRONE_REP_LIMIT,DRONE_REP_SIGMA,DRONE_REP_GAMMA,DRONE_REP_ALPHA)); 
-          set_points(&max_member_reps[idx],shadow.x,shadow.y,shadow.z);
+          max_member_reps[idx] = strongest_force(&max_member_reps[idx],
+                                &linear_Repulsion(&pos,&other_pos,DRONE_REP_LIMIT,DRONE_REP_SIGMA,DRONE_REP_GAMMA,DRONE_REP_ALPHA)); 
         }
       }
     }
@@ -517,11 +522,11 @@ void swarm_follow_wp(void)
     {
       set_points(&danger,waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT);
       if(cosine_sim(&DIRECTION_RAYS[idx], &rotate2D(&sub_points(&danger,&pos),Pi)) >= SECTOR_COS_SIM)
-      {
-        Point shadow = strongest_force(&danger_forces[idx],limExp_Repulsion(&pos,&danger,DANGER_LIMIT,DANGER_CUT_OFF,DANGER_SIGMA,DANGER_GAMMA,DANGER_ALPHA));
-        set_points(&max_danger_forces[idx],shadow.x,shadow.y,shadow.z);
-      }
-      else if((cosine_sim(&DIRECTION_RAYS[idx], &sub_points(&danger,&pos)) >= SECTOR_COS_SIM) && (dist_points(&danger,&pos)<=DANGER_TO_CLOSE)) 
+        max_danger_forces[idx] = strongest_force(&max_danger_forces[idx],
+                                                 &limExp_Repulsion(&pos,&danger,DANGER_LIMIT,DANGER_CUT_OFF,DANGER_SIGMA,
+                                                 DANGER_GAMMA,DANGER_ALPHA));
+      else if((cosine_sim(&DIRECTION_RAYS[idx], &sub_points(&danger,&pos)) >= SECTOR_COS_SIM) && 
+              (dist_points(&danger,&pos)<=DANGER_TO_CLOSE)) 
         mask[idx] = false; 
     }
   }
@@ -539,11 +544,10 @@ void swarm_follow_wp(void)
   alignment_force = scale_down_points(&alignment_force,alignment_counter);
   for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
   {
-    Point force_dummy = {0.0f,0.0f,0.0f};
-    force_dummy = add_points(&force_dummy,&scale_up_points(&max_intrest_forces[idx],GOAL_MULT));
-    force_dummy = add_points(&force_dummy,&scale_up_points(&max_member_atts[idx],DRONE_ATT_MULT));
-    force_dummy = add_points(&force_dummy,&scale_up_points(&max_member_reps[idx],DRONE_REP_MULT));
-    force_dummy = add_points(&force_dummy,&scale_up_points(&max_danger_forces[idx],DANGER_MULT));
+    total_forces[idx] = add_points(&total_forces[idx],&scale_up_points(&max_intrest_forces[idx],GOAL_MULT));
+    total_forces[idx] = add_points(&total_forces[idx],&scale_up_points(&max_member_atts[idx],DRONE_ATT_MULT));
+    total_forces[idx] = add_points(&total_forces[idx],&scale_up_points(&max_member_reps[idx],DRONE_REP_MULT));
+    total_forces[idx] = add_points(&total_forces[idx],&scale_up_points(&max_danger_forces[idx],DANGER_MULT));
 
     /* ----------------------------------------------------------------------
      * Danger Mask already exist and probably not applicable in current setup
@@ -555,9 +559,7 @@ void swarm_follow_wp(void)
     //more likely to perform alignment otherwise less likely to switch directions
     alignSim = cosine_sim(&DIRECTION_RAYS[idx],&alignment_force);
     constrainSim = fmaxf(SECTOR_COS_SIM,cosine_sim(&alignment_force,&vel));
-    if(alignSim < constrainSim) total_forces[idx]=scale_up_points(&force_dummy,alignSim*((0.25-1.0)/(-1.0-constrainSim)));
-
-    set_points(&total_forces[idx],force_dummy.x,force_dummy.y,force_dummy.z);
+    if(alignSim < constrainSim) total_forces[idx]=scale_up_points(&total_forces[idx],alignSim*((0.25-1.0)/(-1.0-constrainSim)));
   }
 
   //select strongest force as main force direction
