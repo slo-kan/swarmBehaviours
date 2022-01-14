@@ -20,9 +20,11 @@
  *
  */
 
-/** @file follow.c
- *  @brief Follow a certain AC ID.
- * Only for rotorcraft firmware.
+/** @file attRep.c
+ *  @brief Implementation of the attraction repulsion algorithm in paparazzi.
+ *  @details This implementation of the attraction repulsion algorithm was created
+ *  by OVGU Members for the SwarmLab project to research swarm behaviours of
+ *  quadcopters in simulated environment.
  */
 
 #include "swarm/swarm.h"
@@ -36,126 +38,210 @@
 #include "state.h"
 
 
-//radius of the globe
+/**
+ * @brief radius of the simulated globe
+ */
 #ifndef GLOBE_RADIUS
 #define GLOBE_RADIUS 6371000
 #endif
 
-/* FOLLOW_OFFSET_ X and Y are all in ENU frame */
+/**
+ * @brief follow offset in X direction
+ * @details FOLLOW_OFFSET_ X and Y are all in ENU frame  
+ */
 #ifndef FOLLOW_OFFSET_X
 #define FOLLOW_OFFSET_X 0.0f
 #endif
 
+/**
+ * @brief follow offset in Y direction
+ * @details FOLLOW_OFFSET_ X and Y are all in ENU frame  
+ */
 #ifndef FOLLOW_OFFSET_Y
 #define FOLLOW_OFFSET_Y 0.0f
 #endif
 
-// defined as altitude above ground
+/**
+ * @brief defines flight height of copters
+ * @details defined as altitude above ground 
+ */
 #ifndef FLIGHT_HEIGHT
 #define FLIGHT_HEIGHT 47.0f
 #endif
 
-// g parameter
+/**
+ * @brief defines gravity in simulation
+ * @details sets (g)ravity value
+ */
 #ifndef GRAVITY
 #define GRAVITY 1.985f
 #endif
 
-// d parameter
+/**
+ * @brief defines comfy distance for copters
+ * @details sets comfy (d)istance value
+ */
 #ifndef COMFY_DIST
 #define COMFY_DIST 4.8f
 #endif
 
-// r parameter
+/**
+ * @brief defines region size for repell and attraction regions
+ * @details sets (r)region size value
+ */
 #ifndef REGION_SIZE
 #define REGION_SIZE 22.5f
 #endif
 
-// dr parameter
+/**
+ * @brief defines region size for repell and attraction regions 
+ * for copters
+ * @details sets (d)rone(r)egion size value
+ */
 #ifndef DRONE_REGION_SIZE
 #define DRONE_REGION_SIZE 2.4f
 #endif
 
-// am parameter -> ka = g * am
+/**
+ * @brief defines attraction multiplier value
+ * @details (a)ttraction(m)multiplier parameter -> ka = g * am
+ */
 #ifndef ATTRECTION_MULTIPLIER
 #define ATTRECTION_MULTIPLIER 4.4f
 #endif
 
-// rm parameter -> kb = g * rm
+/**
+ * @brief defines repulsion multiplier value
+ * @details (r)epulsion(m)ultiplier parameter -> kb = g * rm
+ */
 #ifndef REPULSION_MULTIPLIER
 #define REPULSION_MULTIPLIER 4.4f
 #endif
 
-// dam parameter -> kad = g * dam
+/**
+ * @brief defines copter attraction multiplier
+ * @details (d)rone(a)ttraction(m)ultiplier parameter -> kad = g * dam
+ */
 #ifndef DRONE_ATTRECTION_MULTIPLIER
 #define DRONE_ATTRECTION_MULTIPLIER 0.3f
 #endif
 
-// drm parameter -> kbd = g * drm
+/**
+ * @brief defines copter repulsion multiplier
+ * @details (d)rone(r)epulsion(m)ultiplier parameter -> kbd = g * drm
+ */
 #ifndef DRONE_REPULSION_MULTIPLIER
 #define DRONE_REPULSION_MULTIPLIER 1.0f
 #endif
 
-// velocity limit parameter
+/**
+ * @brief defines drone velocity limit
+ * @details max velocity value for copters
+ */
 #ifndef VELOCITY_LIMIT
 #define VELOCITY_LIMIT 5.0f
 #endif
 
+/**
+ * @brief defines swarm waypoint id
+ */
 #ifndef SWARM_WAYPOINT_ID
 #error "Please define SWARM_WAYPOINT_ID with the ID of FOLLOW wp"
 #endif
 
+/**
+ * @brief defines first attraction point id
+ */
 #ifndef FIRST_ATTRACTION_POINT_ID
 #error "Please define the FIRST_ATTRACTION_POINT_ID"
 #endif
 
+/**
+ * @brief defines last attraction point id
+ */
 #ifndef LAST_ATTRACTION_POINT_ID
 #error "Please define the LAST_ATTRACTION_POINT_ID"
 #endif
 
+/**
+ * @brief defines first repellpoint id
+ */
 #ifndef FIRST_REPELL_POINT_ID
 #error "Please define the  FIRST_REPELL_POINT_ID"
 #endif
 
+/**
+ * @brief defines last repellpoint id
+ */
 #ifndef LAST_REPELL_POINT_ID
 #error "Please define the  LAST_REPELL_POINT_ID"
 #endif
 
+/**
+ * @brief defines first swarm member id
+ */
 #ifndef FIRST_SWARM_MEMBER_ID
 #error "Please define the FIRST_SWARM_MEMBER_ID"
 #endif
 
+/**
+ * @brief defines last swarm member id
+ */
 #ifndef LAST_SWARM_MEMBER_ID
 #error "Please define the LAST_SWARM_MEMBER_ID"
 #endif
 
-
+/*******************************************************************************************************************
+ * @brief defines debug message
+ * @details consists of positions, ids, attraction and repulsion forces 
+ * @param own_pos EnuCord_f for own position
+ * @param target_pos EnuCord_f for target position
+ * @param target_ac_id target ac id
+ * 
+ * @param attraction_force attraction force
+ * @param attraction_d attraction distance
+ * @param attraction_strength attraction strength
+ * @param attraction attraction bool 
+ * 
+ * @param repulsion_force repulsion force
+ * @param repulsion_d repulsion dstance
+ * @param repulsion_strength repulsion strength
+ * @param repulsion repulsion bool
+ ********************************************************************************************************************/
 struct Message_Debug {
-   struct EnuCoor_f own_pos;
-   struct EnuCoor_f target_pos;
-   uint8_t target_ac_id;
+   struct EnuCoor_f own_pos;                  ///< @brief EnuCord_f for own position
+   struct EnuCoor_f target_pos;               ///< @brief EnuCord_f for target position
+   uint8_t target_ac_id;                      ///< @brief target ac id
 
-   struct EnuCoor_f attraction_force;
-   float attraction_d;
-   float attraction_strength;
-   bool attraction;
+   struct EnuCoor_f attraction_force;         ///< @brief attraction force
+   float attraction_d;                        ///< @brief attraction distance
+   float attraction_strength;                 ///< @brief attraction strength
+   bool attraction;                           ///< @brief attraction bool 
 
-   struct EnuCoor_f repulsion_force;
-   float repulsion_d;
-   float repulsion_strength;
-   bool repulsion;
+   struct EnuCoor_f repulsion_force;          ///< @brief repulsion force
+   float repulsion_d;                         ///< @brief repulsion dstance
+   float repulsion_strength;                  ///< @brief repulsion strength
+   bool repulsion;                            ///< @brief repulsion bool
 };
 
+/*********************************************************************************************************************
+ * @brief goal message
+ * @details message that contains "reached status" of each copter
+ * @param wp_id id of approched waypoint
+ * @param own_pos position of copter
+ * @param reached bool if goal is reached or not
+ *********************************************************************************************************************/
 struct Message_Goal {
-   uint8_t wp_id;
-   struct LlaCoor_f own_pos;  
-   bool reached;
+   uint8_t wp_id;                 ///< @brief id of approched waypoint
+   struct LlaCoor_f own_pos;      ///< @brief position of copter
+   bool reached;                  ///< @brief bool if goal is reached or not
 };
 
-static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};
-static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
-static struct Message_Goal syncLink = {0,{0.0f,0.0f,0.0f},false};
-static struct LlaCoor_f att_point = {0.0f,0.0f,0.0f};
-static struct LlaCoor_f current_pos = {0.0f,0.0f,0.0f};
+static struct EnuCoor_f acc = {0.0f, 0.0f, 0.0f};                                                                                               ///< @brief acceleration struct
+static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};      ///< @brief debug message
+static struct Message_Goal syncLink = {0,{0.0f,0.0f,0.0f},false};                                                                               ///< @brief goal message
+static struct LlaCoor_f att_point = {0.0f,0.0f,0.0f};                                                                                           ///< @brief attraction point
+static struct LlaCoor_f current_pos = {0.0f,0.0f,0.0f};                                                                                         ///< @brief current copter position
 
 //LlaCoor_f = {lat,lon,alt} specified in radients in a floating point number format(as specified in the paparazzi documentation)
 //LlaCoor_i = {lat,lon,alt} specified in degrees in an integer format(as specified in the paparazzi documentation)
@@ -163,26 +249,47 @@ static struct LlaCoor_f current_pos = {0.0f,0.0f,0.0f};
 //EnuCoor_f = {lat,lon,alt} specified in meters in an floating point number format(as specified in the paparazzi documentation)
 
 
-/** Get position in local ENU coordinates (float).
- * @param[in] ac_id aircraft id of aircraft info to get
+/** 
+ * @brief get position in local ENU coordinates (float).
+ * @param ac_id aircraft id of aircraft info to get
+ * @return position in EnuCoor_f
  */
 static struct EnuCoor_f *getPositionEnu_f(uint8_t ac_id)
 {
   return (ti_acs[ti_acs_id[ac_id]].ac_id != ac_id)? NULL: acInfoGetPositionEnu_f(ac_id);
 }
 
+/** 
+ * @brief send acceleration info 
+ * @param trans transport channel
+ * @param dev link device
+ */
 static void send_acc_info(struct transport_tx *trans, struct link_device *dev) {
 	pprz_msg_send_ACC(trans, dev, AC_ID, &acc.x, &acc.y, &acc.z);
 }
 
+/** 
+ * @brief send goal info
+ * @param trans transtransport channel
+ * @param dev link device
+ */
 static void send_goal_info(struct transport_tx *trans, struct link_device *dev) {
 	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.wp_id, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached);
 }
 
+/** 
+ * @brief send attraction repulsion info
+ * @param trans transtransport channel
+ * @param dev link device
+ */
 static void send_attract_and_repulse_info(struct transport_tx *trans, struct link_device *dev) {
   pprz_msg_send_ATTREP(trans, dev, AC_ID, &msg.own_pos.x, &msg.own_pos.y, &msg.own_pos.z, &msg.target_pos.x, &msg.target_pos.y, &msg.target_pos.z, &msg.target_ac_id, &msg.attraction_force.x, &msg.attraction_force.y, &msg.attraction_force.z, &msg.attraction_d, &msg.attraction_strength, (uint8_t*)&msg.attraction, &msg.repulsion_force.x, &msg.repulsion_force.y, &msg.repulsion_force.z, &msg.repulsion_d, &msg.repulsion_strength, (uint8_t*)&msg.repulsion);
 }
 
+/** 
+ * @brief initialize swarm
+ * @details register goal, acceleration and attraction repulsion info sending
+ */
 void swarm_init(void) {
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GOAL_ACHIEVED, send_goal_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACC, send_acc_info);
@@ -190,7 +297,11 @@ void swarm_init(void) {
 }
 
 
-//gets the metric distance between two points given in the LlaCoor_f format
+/** 
+ * @brief gets the metric distance between two points given in the LlaCoor_f format
+ * @param own_pos own position
+ * @param goal_pos goal position
+ */
 static float getDistance(struct LlaCoor_f* own_pos, struct LlaCoor_f* goal_pos)
 {
   return GLOBE_RADIUS * acos(
@@ -199,7 +310,11 @@ static float getDistance(struct LlaCoor_f* own_pos, struct LlaCoor_f* goal_pos)
     cos(own_pos->lon - goal_pos->lon));
 }
 
-//converts from LlaCoor_i to LlaCoor_f by reducing to float value and switching from degrees to radients
+/** 
+ * @brief converts from LlaCoor_i to LlaCoor_f by reducing to float value and switching from degrees to radients
+ * @param point LlaCoor_i point thats gonna be converted to LlaCoor_f 
+ * @return LlaCoor_f struct
+ */
 static struct LlaCoor_f toFloatPointFormat(struct LlaCoor_i* point)
 {
   struct LlaCoor_f res = {0.0f,0.0f,FLIGHT_HEIGHT};
@@ -208,7 +323,11 @@ static struct LlaCoor_f toFloatPointFormat(struct LlaCoor_i* point)
   return res;
 }
 
-//updates the content of the periodicly sent goal_achieved message
+/** 
+ * @brief updates the content of the periodicly sent goal_achieved message
+ * @param own_pos own position
+ * @param att_point_id attraction point id
+ */
 static void updateSyncLinkMsg(struct LlaCoor_f* own_pos, uint8_t att_point_id)
 {
     if(getDistance(own_pos, &att_point)<=16.25f)
@@ -222,8 +341,14 @@ static void updateSyncLinkMsg(struct LlaCoor_f* own_pos, uint8_t att_point_id)
     else syncLink.reached = false;
 }
 
-
-//attraction_force = ka/distance * dist_vec
+/** 
+ * @brief calculates attraction for copter
+ * @details attraction_force = ka/distance * dist_vec
+ * @param own_pos own position
+ * @param pos_ac position where copter attracted to
+ * @param acc accelaration
+ * @param multiplier attraction multiplier
+ */
 static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float multiplier)
 {
   struct EnuCoor_f force = {
@@ -249,7 +374,15 @@ static void attract(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y += force.y;
 }
 
-//repulsion_force = (kb*exp(-distance²/2r²)) * dist_vec
+/** 
+ * @brief calculated the repulsion for copter
+ * @details repulsion_force = (kb*exp(-distance²/2r²)) * dist_vec
+ * @param own_pos own position
+ * @param pos_ac position where copter repulsed to
+ * @param acc accelaration
+ * @param perlimiter perlimiter
+ * @param multiplier repulsion multiplier
+ */
 static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float perlimiter, float multiplier)
 {
   struct EnuCoor_f force = {
@@ -274,7 +407,17 @@ static void repulse(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct 
   acc->y -= force.y;
 }
 
-//total_force = (kad*(distance-d)/max(distance,0.01) - kbd*exp(-distance²/(dr²/log(kbd/kad)))) * dist_vec
+/** 
+ * @brief calculates both attraction and repulsion in combination
+ * @details total_force = (kad*(distance-d)/max(distance,0.01) - kbd*exp(-distance²/(dr²/log(kbd/kad)))) * dist_vec
+ * @param own_pos own position
+ * @param pos_ac position where copter repulsed to
+ * @param acc accelaration
+ * @param reg_size region size of repell and attraction regions
+ * @param comfy_dist comfy distance
+ * @param att_multiplier attraction multiplier
+ * @param rep_multiplier repulsion multiplier
+ */
 static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct EnuCoor_f* acc, float reg_size, float comfy_dist, float att_multiplier, float rep_multiplier)
 {
     struct EnuCoor_f force = {
@@ -306,9 +449,10 @@ static void attRep(struct EnuCoor_f *own_pos, struct EnuCoor_f* pos_ac, struct E
     acc->y += force.y;
 }
 
-/*
- * swarm_follow_wp(void)
- * updates the FOLLOW_WAYPOINT_ID to a fixed offset from the last received location
+
+/** 
+ * @brief updates the FOLLOW_WAYPOINT_ID 
+ * @details updates the FOLLOW_WAYPOINT_ID to a fixed offset from the last received location
  * of other aircraft with id FOLLOW_AC_ID
  */
 void swarm_follow_wp(void)
