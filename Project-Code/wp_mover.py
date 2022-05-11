@@ -240,7 +240,7 @@ class WPMover:
                 except Empty: time.sleep(1)
                 else: 
                     own_pos,att_id,ac_id,recvMsg = data
-                    if(getDistance(own_pos,self.__ATT_POINTS[((att_id-2)+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)])<=16.25):
+                    if(getDistance(own_pos,self.__ATT_POINTS[((att_id-2)+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)])<=150): #16.25
                         with self.__MSG_ACCESS:
                             self.__epoche += 1
                             self.__moveWP = []
