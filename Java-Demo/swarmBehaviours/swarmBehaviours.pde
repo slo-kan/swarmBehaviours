@@ -14,19 +14,19 @@ final float PIXEL_METRIC_CONV = 0.06;
 int ticks = 0;
 
 //switch between the behaviors
-//AttRep_Behavior behavior;
-ConSteer_Behavior behavior;
+AttRep_Behavior behavior;
+//ConSteer_Behavior behavior;
 
 void setup() 
 {
   size(1200, 800);
   
   for(int it=0; it<DRONE_COUNT; ++it)
-    //drones.add(new Drone(random(width), random(height))); //att_rep
-    drones.add(new Drone(random(width), random(height), DRONE_DIRECTIONS)); //con_steer
+    drones.add(new Drone(random(width), random(height))); //att_rep
+    //drones.add(new Drone(random(width), random(height), DRONE_DIRECTIONS)); //con_steer
   
-  //behavior = new AttRep_Behavior(drones, width, height);
-  behavior = new ConSteer_Behavior(drones, DRONE_DIRECTIONS, width, height);
+  behavior = new AttRep_Behavior(drones, width, height);
+  //behavior = new ConSteer_Behavior(drones, DRONE_DIRECTIONS, width, height);
 
   //takes number of attraction and repulsion objects
   //behavior.setup(1,1);  //for test mode
@@ -70,8 +70,8 @@ void draw()
   for(Drone drone:drones) 
   {
     //beahvior.primitive_attRep(drone); //for att_rep
-    //behavior.advanced_attRep(drone); //for att_rep
-    behavior.conSteer(drone); //for con_steer
+    behavior.advanced_attRep(drone); //for att_rep
+    //behavior.conSteer(drone); //for con_steer
     
     drone.update();
     drone.show(height,width);

@@ -122,7 +122,7 @@ class Drone {
       }
     }
 
-    if(!DEBUG)
+    if(DEBUG)
     {
       stroke(255, 175, 25);
       strokeWeight(2);
@@ -131,7 +131,7 @@ class Drone {
       point(this.pos.x+this.prevForce.x*VISUAL_SCALE,this.pos.y+this.prevForce.y*VISUAL_SCALE);
     }
 
-    if(!DEBUG) 
+    if(DEBUG) 
     {
       stroke(255, 0, 0);
       for(PVector danger: this.contextMaps.get(DANGER_VECTORS))
