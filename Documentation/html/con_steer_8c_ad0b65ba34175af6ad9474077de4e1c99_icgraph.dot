@@ -1,0 +1,31 @@
+digraph "mag"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="mag",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="cosine_sim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$con_steer_8c.html#a7a8623c93fe2c6e5209c4684376c9169",tooltip=" "];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="swarm_follow_wp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$con_steer_8c.html#afeb382646a55be9088c5410da35969f8",tooltip=" "];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="dist_points",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$con_steer_8c.html#a379bbfa252ce047afcccbab5d6da358f",tooltip=" "];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="limExp_Repulsion",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$con_steer_8c.html#abd5065bfc86dd38f059c62cd63eeafe6",tooltip=" "];
+  Node5 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="linear_Attraction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$con_steer_8c.html#aabd5546a9c4b0feb30c8e8583ab29cf4",tooltip=" "];
+  Node6 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="linear_Repulsion",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$con_steer_8c.html#ab3d9abf733ae16cc11cb707d99e9d7a7",tooltip=" "];
+  Node7 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="log_Attraction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$con_steer_8c.html#ab9d56d77ec8f660fffb0c58a2901ccd7",tooltip=" "];
+  Node8 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="strongest_force",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$con_steer_8c.html#a09acb2a4b0ec68739db656d6aa0c5a94",tooltip=" "];
+  Node9 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}
