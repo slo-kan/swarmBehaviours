@@ -20,10 +20,10 @@
  *
  */
 
-/** @file follow.c
- *  @brief Follow a certain AC ID
- * Only for rotorcraft firmware
- */
+/** @file attRep.c
+*  @brief Implementation of the attraction repulsion algorithm in paparazzi.
+*  @details
+*/
 
 #include "swarm/swarm.h"
 #include "swarm/swarm_info.h"

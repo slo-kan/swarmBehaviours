@@ -55,8 +55,7 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"annotated.html",
-"eva__behaviour_8py.html#a8fa675eb2fcec5b95d9d21c670da7f30"
+"annotated.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

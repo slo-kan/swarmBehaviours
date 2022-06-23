@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SwarmBehavioursOVGU: /home/finkensim/finken/paparazzi/sw/airborne/modules/swarm/conSteer.c File Reference</title>
+<title>SwarmBehavioursOVGU: airborne/modules/swarm/conSteer.c File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -101,6 +101,9 @@ $(document).ready(function(){initNavTree('conSteer_8c.html',''); initResizable()
 <div class="title">conSteer.c File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Implementation of the context steering algorithm in paparazzi.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;swarm/swarm.h&quot;</code><br />
 <code>#include &quot;swarm/swarm_info.h&quot;</code><br />
 <code>#include &quot;generated/airframe.h&quot;</code><br />
@@ -119,7 +122,8 @@ $(document).ready(function(){initNavTree('conSteer_8c.html',''); initResizable()
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structPoint.html">Point</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structPoint.html">Point</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">defines Swarm waypoint ids.  <a href="structPoint.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structMessage__Debug.html">Message_Debug</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">struct to hold debug message information  <a href="structMessage__Debug.html#details">More...</a><br /></td></tr>
@@ -128,51 +132,74 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">struct to hold message goal information  <a href="structMessage__Goal.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structDummyZ.html">DummyZ</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">message that contains a dummy variable  <a href="structDummyZ.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ae326226c92c0cf8c0d8252c7bdb51f72"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ae326226c92c0cf8c0d8252c7bdb51f72">FOLLOW_OFFSET_X</a>&#160;&#160;&#160;0.0f</td></tr>
+<tr class="memdesc:ae326226c92c0cf8c0d8252c7bdb51f72"><td class="mdescLeft">&#160;</td><td class="mdescRight">follow offset in X direction(in ENU frame).  <a href="conSteer_8c.html#ae326226c92c0cf8c0d8252c7bdb51f72">More...</a><br /></td></tr>
 <tr class="separator:ae326226c92c0cf8c0d8252c7bdb51f72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a767f3bb6f219f9f50a74deb8eadbbea1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a767f3bb6f219f9f50a74deb8eadbbea1">FOLLOW_OFFSET_Y</a>&#160;&#160;&#160;0.0f</td></tr>
+<tr class="memdesc:a767f3bb6f219f9f50a74deb8eadbbea1"><td class="mdescLeft">&#160;</td><td class="mdescRight">follow offset in X direction(in ENU frame).  <a href="conSteer_8c.html#a767f3bb6f219f9f50a74deb8eadbbea1">More...</a><br /></td></tr>
 <tr class="separator:a767f3bb6f219f9f50a74deb8eadbbea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a668dc1d455f90c57c53af44d892f7ef6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a668dc1d455f90c57c53af44d892f7ef6">FLIGHT_HEIGHT</a>&#160;&#160;&#160;47.0f</td></tr>
+<tr class="memdesc:a668dc1d455f90c57c53af44d892f7ef6"><td class="mdescLeft">&#160;</td><td class="mdescRight">defines the altitude of the aircraft above ground in meters.  <a href="conSteer_8c.html#a668dc1d455f90c57c53af44d892f7ef6">More...</a><br /></td></tr>
 <tr class="separator:a668dc1d455f90c57c53af44d892f7ef6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2cd96d53dd3ba6407db6766c3d92b26"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ac2cd96d53dd3ba6407db6766c3d92b26">MAX_SPEED</a>&#160;&#160;&#160;5.0f</td></tr>
+<tr class="memitem:ac2cd96d53dd3ba6407db6766c3d92b26"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ac2cd96d53dd3ba6407db6766c3d92b26">MAX_SPEED</a>&#160;&#160;&#160;3.0f</td></tr>
+<tr class="memdesc:ac2cd96d53dd3ba6407db6766c3d92b26"><td class="mdescLeft">&#160;</td><td class="mdescRight">defines the maximum speed an aircraft can have in any direction.  <a href="conSteer_8c.html#ac2cd96d53dd3ba6407db6766c3d92b26">More...</a><br /></td></tr>
 <tr class="separator:ac2cd96d53dd3ba6407db6766c3d92b26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8352182f82d22d369db262d8b8bdeb8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#aa8352182f82d22d369db262d8b8bdeb8">GLOBE_RADIUS</a>&#160;&#160;&#160;6371000</td></tr>
+<tr class="memdesc:aa8352182f82d22d369db262d8b8bdeb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">defines the radius of Earth in meters.  <a href="conSteer_8c.html#aa8352182f82d22d369db262d8b8bdeb8">More...</a><br /></td></tr>
 <tr class="separator:aa8352182f82d22d369db262d8b8bdeb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab00118dfb4fb45c75ffa5a19290b79b9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ab00118dfb4fb45c75ffa5a19290b79b9">NUM_DIRECTION_RAYS</a>&#160;&#160;&#160;8</td></tr>
+<tr class="memdesc:ab00118dfb4fb45c75ffa5a19290b79b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">defines the number of directional rays(entities) for context(map)  <a href="conSteer_8c.html#ab00118dfb4fb45c75ffa5a19290b79b9">More...</a><br /></td></tr>
 <tr class="separator:ab00118dfb4fb45c75ffa5a19290b79b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6801baa546c6112d19eb095111d24720"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a6801baa546c6112d19eb095111d24720">GRAVITY</a>&#160;&#160;&#160;1.985f</td></tr>
+<tr class="memdesc:a6801baa546c6112d19eb095111d24720"><td class="mdescLeft">&#160;</td><td class="mdescRight">is a multiplier parameter for all the forces calculated.  <a href="conSteer_8c.html#a6801baa546c6112d19eb095111d24720">More...</a><br /></td></tr>
 <tr class="separator:a6801baa546c6112d19eb095111d24720"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad86bd7754e44c331fb1e426b84581fcc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ad86bd7754e44c331fb1e426b84581fcc">GOAL_MULT</a>&#160;&#160;&#160;50.0f</td></tr>
+<tr class="memitem:ad86bd7754e44c331fb1e426b84581fcc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ad86bd7754e44c331fb1e426b84581fcc">GOAL_MULT</a>&#160;&#160;&#160;5.0f</td></tr>
+<tr class="memdesc:ad86bd7754e44c331fb1e426b84581fcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">multiplier for goal attraction force in context maps.  <a href="conSteer_8c.html#ad86bd7754e44c331fb1e426b84581fcc">More...</a><br /></td></tr>
 <tr class="separator:ad86bd7754e44c331fb1e426b84581fcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51bb46ec7308e2e206a6ae682dffa1ba"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a51bb46ec7308e2e206a6ae682dffa1ba">GOAL_MAX</a>&#160;&#160;&#160;4.0f</td></tr>
+<tr class="memdesc:a51bb46ec7308e2e206a6ae682dffa1ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">is a multiplication parameter for attraction between aircrafts and goal points.  <a href="conSteer_8c.html#a51bb46ec7308e2e206a6ae682dffa1ba">More...</a><br /></td></tr>
 <tr class="separator:a51bb46ec7308e2e206a6ae682dffa1ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03542e14745283e9c261470e8351ef1d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a03542e14745283e9c261470e8351ef1d">DANGER_MULT</a>&#160;&#160;&#160;150.0f</td></tr>
+<tr class="memitem:a03542e14745283e9c261470e8351ef1d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a03542e14745283e9c261470e8351ef1d">DANGER_MULT</a>&#160;&#160;&#160;10.0f</td></tr>
+<tr class="memdesc:a03542e14745283e9c261470e8351ef1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">multiplier for danger repulson force in context maps-  <a href="conSteer_8c.html#a03542e14745283e9c261470e8351ef1d">More...</a><br /></td></tr>
 <tr class="separator:a03542e14745283e9c261470e8351ef1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a014f4086e4bb29d4364b94eb217f2fb9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a014f4086e4bb29d4364b94eb217f2fb9">DANGER_TO_CLOSE</a>&#160;&#160;&#160;8.0f</td></tr>
+<tr class="memdesc:a014f4086e4bb29d4364b94eb217f2fb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">distance for masking for danger points in drone maps.  <a href="conSteer_8c.html#a014f4086e4bb29d4364b94eb217f2fb9">More...</a><br /></td></tr>
 <tr class="separator:a014f4086e4bb29d4364b94eb217f2fb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a488c58273c1d43e87285cee43cc55788"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a488c58273c1d43e87285cee43cc55788">DANGER_CUT_OFF</a>&#160;&#160;&#160;5.0f</td></tr>
+<tr class="memdesc:a488c58273c1d43e87285cee43cc55788"><td class="mdescLeft">&#160;</td><td class="mdescRight">distance after which the repulsion force calculating function changes from linear to exponential.  <a href="conSteer_8c.html#a488c58273c1d43e87285cee43cc55788">More...</a><br /></td></tr>
 <tr class="separator:a488c58273c1d43e87285cee43cc55788"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5c546660a97f31ccede2202c1522624"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ae5c546660a97f31ccede2202c1522624">DANGER_MAX</a>&#160;&#160;&#160;4.0f</td></tr>
+<tr class="memdesc:ae5c546660a97f31ccede2202c1522624"><td class="mdescLeft">&#160;</td><td class="mdescRight">multiplication variable for the repulsion force between aircraft and danger points.  <a href="conSteer_8c.html#ae5c546660a97f31ccede2202c1522624">More...</a><br /></td></tr>
 <tr class="separator:ae5c546660a97f31ccede2202c1522624"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a79ab0b5cfaaf5940fc64fcc574ba0900"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a79ab0b5cfaaf5940fc64fcc574ba0900">DRONE_ATT_MULT</a>&#160;&#160;&#160;0.3f</td></tr>
+<tr class="memitem:a79ab0b5cfaaf5940fc64fcc574ba0900"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a79ab0b5cfaaf5940fc64fcc574ba0900">DRONE_ATT_MULT</a>&#160;&#160;&#160;0.6f</td></tr>
+<tr class="memdesc:a79ab0b5cfaaf5940fc64fcc574ba0900"><td class="mdescLeft">&#160;</td><td class="mdescRight">multiplier for aircraft attraction force in context maps.  <a href="conSteer_8c.html#a79ab0b5cfaaf5940fc64fcc574ba0900">More...</a><br /></td></tr>
 <tr class="separator:a79ab0b5cfaaf5940fc64fcc574ba0900"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4155c6af7228822238a1aba760dc3b78"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a4155c6af7228822238a1aba760dc3b78">DRONE_ATT_CUT_OFF</a>&#160;&#160;&#160;20.0f</td></tr>
+<tr class="memdesc:a4155c6af7228822238a1aba760dc3b78"><td class="mdescLeft">&#160;</td><td class="mdescRight">minimum distance between aircrafts to calculate the attraction force.  <a href="conSteer_8c.html#a4155c6af7228822238a1aba760dc3b78">More...</a><br /></td></tr>
 <tr class="separator:a4155c6af7228822238a1aba760dc3b78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04f9a35da686eaf65c33b220b7c350db"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a04f9a35da686eaf65c33b220b7c350db">SWARM_DIST</a>&#160;&#160;&#160;12.5f</td></tr>
+<tr class="memitem:a04f9a35da686eaf65c33b220b7c350db"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a04f9a35da686eaf65c33b220b7c350db">SWARM_DIST</a>&#160;&#160;&#160;25.0f</td></tr>
+<tr class="memdesc:a04f9a35da686eaf65c33b220b7c350db"><td class="mdescLeft">&#160;</td><td class="mdescRight">maximum diatance upto which aircrafts attraction forces are calculated for drone maps.  <a href="conSteer_8c.html#a04f9a35da686eaf65c33b220b7c350db">More...</a><br /></td></tr>
 <tr class="separator:a04f9a35da686eaf65c33b220b7c350db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62a71a830723c3038791fc0c6508fb99"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a62a71a830723c3038791fc0c6508fb99">DRONE_TO_CLOSE</a>&#160;&#160;&#160;4.0f</td></tr>
+<tr class="memitem:a62a71a830723c3038791fc0c6508fb99"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a62a71a830723c3038791fc0c6508fb99">DRONE_TO_CLOSE</a>&#160;&#160;&#160;12.5f</td></tr>
+<tr class="memdesc:a62a71a830723c3038791fc0c6508fb99"><td class="mdescLeft">&#160;</td><td class="mdescRight">distance for drones for masking for danger maps.  <a href="conSteer_8c.html#a62a71a830723c3038791fc0c6508fb99">More...</a><br /></td></tr>
 <tr class="separator:a62a71a830723c3038791fc0c6508fb99"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f36e859e7cabdc56719b3b4386d04bf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a0f36e859e7cabdc56719b3b4386d04bf">DRONE_REP_MULT</a>&#160;&#160;&#160;9.0f</td></tr>
+<tr class="memitem:a0f36e859e7cabdc56719b3b4386d04bf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a0f36e859e7cabdc56719b3b4386d04bf">DRONE_REP_MULT</a>&#160;&#160;&#160;6.0f</td></tr>
+<tr class="memdesc:a0f36e859e7cabdc56719b3b4386d04bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">multiplier for aircraft repulsion force in context maps. <br  />
+  <a href="conSteer_8c.html#a0f36e859e7cabdc56719b3b4386d04bf">More...</a><br /></td></tr>
 <tr class="separator:a0f36e859e7cabdc56719b3b4386d04bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bca767c4aa67cc9d66aa7541484e829"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a3bca767c4aa67cc9d66aa7541484e829">DRONE_REP_MAX</a>&#160;&#160;&#160;10.0f</td></tr>
+<tr class="memdesc:a3bca767c4aa67cc9d66aa7541484e829"><td class="mdescLeft">&#160;</td><td class="mdescRight">multiplication variable for the repulsion force between aircrafts.  <a href="conSteer_8c.html#a3bca767c4aa67cc9d66aa7541484e829">More...</a><br /></td></tr>
 <tr class="separator:a3bca767c4aa67cc9d66aa7541484e829"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4108bd6662c4e6069211bf7bf3aeca79"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a4108bd6662c4e6069211bf7bf3aeca79">ALIGN_MULT</a>&#160;&#160;&#160;1.25f</td></tr>
+<tr class="memdesc:a4108bd6662c4e6069211bf7bf3aeca79"><td class="mdescLeft">&#160;</td><td class="mdescRight">defines the multiplication parameter for alignment with other drones.  <a href="conSteer_8c.html#a4108bd6662c4e6069211bf7bf3aeca79">More...</a><br /></td></tr>
 <tr class="separator:a4108bd6662c4e6069211bf7bf3aeca79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9663ef85993c32222ae8fce4bcb9c303"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a9663ef85993c32222ae8fce4bcb9c303">SELF_ALIGN_MULT</a>&#160;&#160;&#160;0.5f</td></tr>
+<tr class="memdesc:a9663ef85993c32222ae8fce4bcb9c303"><td class="mdescLeft">&#160;</td><td class="mdescRight">defines the multiplication parameter for alignment with previous movement(depicts inertia).  <a href="conSteer_8c.html#a9663ef85993c32222ae8fce4bcb9c303">More...</a><br /></td></tr>
 <tr class="separator:a9663ef85993c32222ae8fce4bcb9c303"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
@@ -183,64 +210,94 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:aa2a37b6501d6e8496019e814f31fe4c0"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#aa2a37b6501d6e8496019e814f31fe4c0">init_point</a> (float x, float y)</td></tr>
+<tr class="memdesc:aa2a37b6501d6e8496019e814f31fe4c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">initializes a point.  <a href="conSteer_8c.html#aa2a37b6501d6e8496019e814f31fe4c0">More...</a><br /></td></tr>
 <tr class="separator:aa2a37b6501d6e8496019e814f31fe4c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a932c67f1b82dec99d4c2de1f80557dbe"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a932c67f1b82dec99d4c2de1f80557dbe">point_from_angle</a> (float radians)</td></tr>
+<tr class="memdesc:a932c67f1b82dec99d4c2de1f80557dbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function to calculate point from an angle.  <a href="conSteer_8c.html#a932c67f1b82dec99d4c2de1f80557dbe">More...</a><br /></td></tr>
 <tr class="separator:a932c67f1b82dec99d4c2de1f80557dbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09acf1f60a0bc6035261f810602c46c2"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a09acf1f60a0bc6035261f810602c46c2">sub_points</a> (<a class="el" href="structPoint.html">Point</a> *a, <a class="el" href="structPoint.html">Point</a> *b)</td></tr>
+<tr class="memdesc:a09acf1f60a0bc6035261f810602c46c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">subtracts a poin from another.  <a href="conSteer_8c.html#a09acf1f60a0bc6035261f810602c46c2">More...</a><br /></td></tr>
 <tr class="separator:a09acf1f60a0bc6035261f810602c46c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c595fbac5526c5ed07cbce8a1451e03"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a6c595fbac5526c5ed07cbce8a1451e03">add_points</a> (<a class="el" href="structPoint.html">Point</a> *a, <a class="el" href="structPoint.html">Point</a> *b)</td></tr>
+<tr class="memdesc:a6c595fbac5526c5ed07cbce8a1451e03"><td class="mdescLeft">&#160;</td><td class="mdescRight">adds a point to another.  <a href="conSteer_8c.html#a6c595fbac5526c5ed07cbce8a1451e03">More...</a><br /></td></tr>
 <tr class="separator:a6c595fbac5526c5ed07cbce8a1451e03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac83203636d12532da0bf5e5892d0f5b"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#aac83203636d12532da0bf5e5892d0f5b">scale_up_points</a> (<a class="el" href="structPoint.html">Point</a> *a, float s)</td></tr>
+<tr class="memdesc:aac83203636d12532da0bf5e5892d0f5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">scales up a point.  <a href="conSteer_8c.html#aac83203636d12532da0bf5e5892d0f5b">More...</a><br /></td></tr>
 <tr class="separator:aac83203636d12532da0bf5e5892d0f5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a542cbaf00dd8ae7edfd5d0ecd194f79f"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a542cbaf00dd8ae7edfd5d0ecd194f79f">scale_down_points</a> (<a class="el" href="structPoint.html">Point</a> *a, float s)</td></tr>
+<tr class="memdesc:a542cbaf00dd8ae7edfd5d0ecd194f79f"><td class="mdescLeft">&#160;</td><td class="mdescRight">scales down a point.  <a href="conSteer_8c.html#a542cbaf00dd8ae7edfd5d0ecd194f79f">More...</a><br /></td></tr>
 <tr class="separator:a542cbaf00dd8ae7edfd5d0ecd194f79f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7dc3e4f542f169460a86befea210d9f1"><td class="memItemLeft" align="right" valign="top">static float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a7dc3e4f542f169460a86befea210d9f1">dot</a> (<a class="el" href="structPoint.html">Point</a> *a, <a class="el" href="structPoint.html">Point</a> *b)</td></tr>
+<tr class="memdesc:a7dc3e4f542f169460a86befea210d9f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">dot product of two points.  <a href="conSteer_8c.html#a7dc3e4f542f169460a86befea210d9f1">More...</a><br /></td></tr>
 <tr class="separator:a7dc3e4f542f169460a86befea210d9f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0b65ba34175af6ad9474077de4e1c99"><td class="memItemLeft" align="right" valign="top">static float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ad0b65ba34175af6ad9474077de4e1c99">mag</a> (<a class="el" href="structPoint.html">Point</a> *a)</td></tr>
+<tr class="memdesc:ad0b65ba34175af6ad9474077de4e1c99"><td class="mdescLeft">&#160;</td><td class="mdescRight">magnitude of a point.  <a href="conSteer_8c.html#ad0b65ba34175af6ad9474077de4e1c99">More...</a><br /></td></tr>
 <tr class="separator:ad0b65ba34175af6ad9474077de4e1c99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a8623c93fe2c6e5209c4684376c9169"><td class="memItemLeft" align="right" valign="top">static float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a7a8623c93fe2c6e5209c4684376c9169">cosine_sim</a> (<a class="el" href="structPoint.html">Point</a> *a, <a class="el" href="structPoint.html">Point</a> *b)</td></tr>
+<tr class="memdesc:a7a8623c93fe2c6e5209c4684376c9169"><td class="mdescLeft">&#160;</td><td class="mdescRight">cosine similarity between two points.  <a href="conSteer_8c.html#a7a8623c93fe2c6e5209c4684376c9169">More...</a><br /></td></tr>
 <tr class="separator:a7a8623c93fe2c6e5209c4684376c9169"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a379bbfa252ce047afcccbab5d6da358f"><td class="memItemLeft" align="right" valign="top">static float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a379bbfa252ce047afcccbab5d6da358f">dist_points</a> (<a class="el" href="structPoint.html">Point</a> *a, <a class="el" href="structPoint.html">Point</a> *b)</td></tr>
+<tr class="memdesc:a379bbfa252ce047afcccbab5d6da358f"><td class="mdescLeft">&#160;</td><td class="mdescRight">distance between two points.  <a href="conSteer_8c.html#a379bbfa252ce047afcccbab5d6da358f">More...</a><br /></td></tr>
 <tr class="separator:a379bbfa252ce047afcccbab5d6da358f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f459dac080c38e516ab1ae7c9e470ee"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a4f459dac080c38e516ab1ae7c9e470ee">set_points</a> (<a class="el" href="structPoint.html">Point</a> *p, float x, float y)</td></tr>
+<tr class="memdesc:a4f459dac080c38e516ab1ae7c9e470ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">set point struct with given coordinates.  <a href="conSteer_8c.html#a4f459dac080c38e516ab1ae7c9e470ee">More...</a><br /></td></tr>
 <tr class="separator:a4f459dac080c38e516ab1ae7c9e470ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09acb2a4b0ec68739db656d6aa0c5a94"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a09acb2a4b0ec68739db656d6aa0c5a94">strongest_force</a> (<a class="el" href="structPoint.html">Point</a> *a, <a class="el" href="structPoint.html">Point</a> *b)</td></tr>
+<tr class="memdesc:a09acb2a4b0ec68739db656d6aa0c5a94"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns the point with higher magnitude.  <a href="conSteer_8c.html#a09acb2a4b0ec68739db656d6aa0c5a94">More...</a><br /></td></tr>
 <tr class="separator:a09acb2a4b0ec68739db656d6aa0c5a94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9b2e6672f914e56e728b4c029ca445de"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a9b2e6672f914e56e728b4c029ca445de">write_to_debug_file</a> (<a class="el" href="structPoint.html">Point</a> *interest_forces, <a class="el" href="structPoint.html">Point</a> *danger_forces, <a class="el" href="structPoint.html">Point</a> *member_att_forces, <a class="el" href="structPoint.html">Point</a> *member_rep_forces, float *score, float *alignmentMap, float *selfAlignmentMap, bool *mask, <a class="el" href="structPoint.html">Point</a> alignment_force, int choosen_dir, int neighbour_dir)</td></tr>
+<tr class="memdesc:a9b2e6672f914e56e728b4c029ca445de"><td class="mdescLeft">&#160;</td><td class="mdescRight">writes debug log to debug file.  <a href="conSteer_8c.html#a9b2e6672f914e56e728b4c029ca445de">More...</a><br /></td></tr>
 <tr class="separator:a9b2e6672f914e56e728b4c029ca445de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab11b4a32add3106f4451131eca617211"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ab11b4a32add3106f4451131eca617211">create_debug_file</a> ()</td></tr>
+<tr class="memdesc:ab11b4a32add3106f4451131eca617211"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a debug file.  <a href="conSteer_8c.html#ab11b4a32add3106f4451131eca617211">More...</a><br /></td></tr>
 <tr class="separator:ab11b4a32add3106f4451131eca617211"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab303fb09d165db5aba2c4565319e374e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ab303fb09d165db5aba2c4565319e374e">write_to_log_file</a> ()</td></tr>
+<tr class="memdesc:ab303fb09d165db5aba2c4565319e374e"><td class="mdescLeft">&#160;</td><td class="mdescRight">writes log to log file.  <a href="conSteer_8c.html#ab303fb09d165db5aba2c4565319e374e">More...</a><br /></td></tr>
 <tr class="separator:ab303fb09d165db5aba2c4565319e374e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef5695019735805928d35cb8323d2195"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#aef5695019735805928d35cb8323d2195">create_log_file</a> ()</td></tr>
+<tr class="memdesc:aef5695019735805928d35cb8323d2195"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a log file object.  <a href="conSteer_8c.html#aef5695019735805928d35cb8323d2195">More...</a><br /></td></tr>
 <tr class="separator:aef5695019735805928d35cb8323d2195"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf0994591fd6d0e8d71f1bdd6d2ef767"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#aaf0994591fd6d0e8d71f1bdd6d2ef767">write_to_swarm_info_debug_file</a> (<a class="el" href="structPoint.html">Point</a> *others, int size)</td></tr>
+<tr class="memdesc:aaf0994591fd6d0e8d71f1bdd6d2ef767"><td class="mdescLeft">&#160;</td><td class="mdescRight">writes swarm log to swarm info log file.  <a href="conSteer_8c.html#aaf0994591fd6d0e8d71f1bdd6d2ef767">More...</a><br /></td></tr>
 <tr class="separator:aaf0994591fd6d0e8d71f1bdd6d2ef767"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91eaf7c3c2f3283b49eb073c7e0c20f5"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a91eaf7c3c2f3283b49eb073c7e0c20f5">create_swarm_info_debug_file</a> (int start, int end)</td></tr>
+<tr class="memdesc:a91eaf7c3c2f3283b49eb073c7e0c20f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a debug file for swarm info.  <a href="conSteer_8c.html#a91eaf7c3c2f3283b49eb073c7e0c20f5">More...</a><br /></td></tr>
 <tr class="separator:a91eaf7c3c2f3283b49eb073c7e0c20f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e1f0a68ca606764e90073c13a7625c7"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a5e1f0a68ca606764e90073c13a7625c7">send_acc_info</a> (struct transport_tx *trans, struct link_device *dev)</td></tr>
+<tr class="memdesc:a5e1f0a68ca606764e90073c13a7625c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">send acceleration info  <a href="conSteer_8c.html#a5e1f0a68ca606764e90073c13a7625c7">More...</a><br /></td></tr>
 <tr class="separator:a5e1f0a68ca606764e90073c13a7625c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a16e2fc6ece81cee16ebc00bae02ae9dc"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a16e2fc6ece81cee16ebc00bae02ae9dc">send_goal_info</a> (struct transport_tx *trans, struct link_device *dev)</td></tr>
+<tr class="memdesc:a16e2fc6ece81cee16ebc00bae02ae9dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">send goal info  <a href="conSteer_8c.html#a16e2fc6ece81cee16ebc00bae02ae9dc">More...</a><br /></td></tr>
 <tr class="separator:a16e2fc6ece81cee16ebc00bae02ae9dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76a5f80ec5945935a1269ef0a7d8d57f"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a76a5f80ec5945935a1269ef0a7d8d57f">send_attract_and_repulse_info</a> (struct transport_tx *trans, struct link_device *dev)</td></tr>
+<tr class="memdesc:a76a5f80ec5945935a1269ef0a7d8d57f"><td class="mdescLeft">&#160;</td><td class="mdescRight">send attraction repulsion info  <a href="conSteer_8c.html#a76a5f80ec5945935a1269ef0a7d8d57f">More...</a><br /></td></tr>
 <tr class="separator:a76a5f80ec5945935a1269ef0a7d8d57f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9fc25150ae671d5d5a8f6bec950de95"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ac9fc25150ae671d5d5a8f6bec950de95">swarm_init</a> (void)</td></tr>
+<tr class="memdesc:ac9fc25150ae671d5d5a8f6bec950de95"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize swarm  <a href="conSteer_8c.html#ac9fc25150ae671d5d5a8f6bec950de95">More...</a><br /></td></tr>
 <tr class="separator:ac9fc25150ae671d5d5a8f6bec950de95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9931b1596600b1d65eb0be1dcf241d3f"><td class="memItemLeft" align="right" valign="top">static struct LlaCoor_f&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a9931b1596600b1d65eb0be1dcf241d3f">toFloatPointFormat</a> (struct LlaCoor_i *point)</td></tr>
+<tr class="memdesc:a9931b1596600b1d65eb0be1dcf241d3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">converts from LlaCoor_i to LlaCoor_f by reducing to float value and switching from degrees to radians  <a href="conSteer_8c.html#a9931b1596600b1d65eb0be1dcf241d3f">More...</a><br /></td></tr>
 <tr class="separator:a9931b1596600b1d65eb0be1dcf241d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb657cf582bc735a32ea3d316003b427"><td class="memItemLeft" align="right" valign="top">static struct EnuCoor_f *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#adb657cf582bc735a32ea3d316003b427">getPositionEnu_f</a> (uint8_t ac_id)</td></tr>
+<tr class="memdesc:adb657cf582bc735a32ea3d316003b427"><td class="mdescLeft">&#160;</td><td class="mdescRight">gets position of aircraft in local ENU coordinates(float).  <a href="conSteer_8c.html#adb657cf582bc735a32ea3d316003b427">More...</a><br /></td></tr>
 <tr class="separator:adb657cf582bc735a32ea3d316003b427"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26316df193dee746270c0f94c9a40bd7"><td class="memItemLeft" align="right" valign="top">static float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a26316df193dee746270c0f94c9a40bd7">getDistance</a> (struct LlaCoor_f *own_pos, struct LlaCoor_f *goal_pos)</td></tr>
+<tr class="memdesc:a26316df193dee746270c0f94c9a40bd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">gets the metric distance between two points given in the LlaCoor_f format  <a href="conSteer_8c.html#a26316df193dee746270c0f94c9a40bd7">More...</a><br /></td></tr>
 <tr class="separator:a26316df193dee746270c0f94c9a40bd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5111ef8372f6c7783808658f5e5c30fb"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a5111ef8372f6c7783808658f5e5c30fb">updateSyncLinkMsg</a> (struct LlaCoor_f *own_pos, uint8_t att_point_id)</td></tr>
+<tr class="memdesc:a5111ef8372f6c7783808658f5e5c30fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">updates the content of aircraft via the periodically sent goal_achieved messages  <a href="conSteer_8c.html#a5111ef8372f6c7783808658f5e5c30fb">More...</a><br /></td></tr>
 <tr class="separator:a5111ef8372f6c7783808658f5e5c30fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab3d9abf733ae16cc11cb707d99e9d7a7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ab3d9abf733ae16cc11cb707d99e9d7a7">linear_Repulsion</a> (<a class="el" href="structPoint.html">Point</a> *<a class="el" href="conSteer_8c.html#ac16331a985d00cfea9d3a673d09403a5">pos</a>, <a class="el" href="structPoint.html">Point</a> *target, float max_val)</td></tr>
+<tr class="memdesc:ab3d9abf733ae16cc11cb707d99e9d7a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">calculates repulsion forces to other aircrafts.  <a href="conSteer_8c.html#ab3d9abf733ae16cc11cb707d99e9d7a7">More...</a><br /></td></tr>
 <tr class="separator:ab3d9abf733ae16cc11cb707d99e9d7a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9d56d77ec8f660fffb0c58a2901ccd7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ab9d56d77ec8f660fffb0c58a2901ccd7">log_Attraction</a> (<a class="el" href="structPoint.html">Point</a> *<a class="el" href="conSteer_8c.html#ac16331a985d00cfea9d3a673d09403a5">pos</a>, <a class="el" href="structPoint.html">Point</a> *target, float cutOff)</td></tr>
+<tr class="memdesc:ab9d56d77ec8f660fffb0c58a2901ccd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">calculates attraction forces to other aircrafts.  <a href="conSteer_8c.html#ab9d56d77ec8f660fffb0c58a2901ccd7">More...</a><br /></td></tr>
 <tr class="separator:ab9d56d77ec8f660fffb0c58a2901ccd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabd5546a9c4b0feb30c8e8583ab29cf4"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#aabd5546a9c4b0feb30c8e8583ab29cf4">linear_Attraction</a> (<a class="el" href="structPoint.html">Point</a> *<a class="el" href="conSteer_8c.html#ac16331a985d00cfea9d3a673d09403a5">pos</a>, <a class="el" href="structPoint.html">Point</a> *target, float max_val)</td></tr>
+<tr class="memdesc:aabd5546a9c4b0feb30c8e8583ab29cf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">calculates attraction forces to goal points.  <a href="conSteer_8c.html#aabd5546a9c4b0feb30c8e8583ab29cf4">More...</a><br /></td></tr>
 <tr class="separator:aabd5546a9c4b0feb30c8e8583ab29cf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd5065bfc86dd38f059c62cd63eeafe6"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#abd5065bfc86dd38f059c62cd63eeafe6">limExp_Repulsion</a> (<a class="el" href="structPoint.html">Point</a> *<a class="el" href="conSteer_8c.html#ac16331a985d00cfea9d3a673d09403a5">pos</a>, <a class="el" href="structPoint.html">Point</a> *target, float cutOff, float max_val)</td></tr>
+<tr class="memdesc:abd5065bfc86dd38f059c62cd63eeafe6"><td class="mdescLeft">&#160;</td><td class="mdescRight">calculates repulsion forces to danger points.  <a href="conSteer_8c.html#abd5065bfc86dd38f059c62cd63eeafe6">More...</a><br /></td></tr>
 <tr class="separator:abd5065bfc86dd38f059c62cd63eeafe6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afeb382646a55be9088c5410da35969f8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#afeb382646a55be9088c5410da35969f8">swarm_follow_wp</a> (void)</td></tr>
 <tr class="separator:afeb382646a55be9088c5410da35969f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -248,39 +305,59 @@ Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a9e2d10e7c84283314a9dbd2fe077743f"><td class="memItemLeft" align="right" valign="top">static struct timespec&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a9e2d10e7c84283314a9dbd2fe077743f">tp</a> = {0, 0}</td></tr>
+<tr class="memdesc:a9e2d10e7c84283314a9dbd2fe077743f"><td class="mdescLeft">&#160;</td><td class="mdescRight">timespec to store time  <a href="conSteer_8c.html#a9e2d10e7c84283314a9dbd2fe077743f">More...</a><br /></td></tr>
 <tr class="separator:a9e2d10e7c84283314a9dbd2fe077743f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46c8772bc9936e87038ddba2cc9698b8"><td class="memItemLeft" align="right" valign="top">static float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a46c8772bc9936e87038ddba2cc9698b8">SECTOR_COS_SIM</a> = cosf(M_PI/ 8 )</td></tr>
+<tr class="memdesc:a46c8772bc9936e87038ddba2cc9698b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">cosine similarity of a sector  <a href="conSteer_8c.html#a46c8772bc9936e87038ddba2cc9698b8">More...</a><br /></td></tr>
 <tr class="separator:a46c8772bc9936e87038ddba2cc9698b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1bb4a74dd14364a2d9d8073983c5c0f9"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a1bb4a74dd14364a2d9d8073983c5c0f9">DIRECTION_RAYS</a> [8] = {{0.0f,0.0f}}</td></tr>
+<tr class="memdesc:a1bb4a74dd14364a2d9d8073983c5c0f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">array of points(direction rays)  <a href="conSteer_8c.html#a1bb4a74dd14364a2d9d8073983c5c0f9">More...</a><br /></td></tr>
 <tr class="separator:a1bb4a74dd14364a2d9d8073983c5c0f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac84f405443fcef94ba61dc7b9ac19e14"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ac84f405443fcef94ba61dc7b9ac19e14">acc</a> = {0.0f, 0.0f}</td></tr>
+<tr class="memdesc:ac84f405443fcef94ba61dc7b9ac19e14"><td class="mdescLeft">&#160;</td><td class="mdescRight">acceleration  <a href="conSteer_8c.html#ac84f405443fcef94ba61dc7b9ac19e14">More...</a><br /></td></tr>
 <tr class="separator:ac84f405443fcef94ba61dc7b9ac19e14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b3b2de9378dab9582abbe00117b16e4"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a6b3b2de9378dab9582abbe00117b16e4">vel</a> = {0.0f, 0.0f}</td></tr>
+<tr class="memdesc:a6b3b2de9378dab9582abbe00117b16e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">velocity  <a href="conSteer_8c.html#a6b3b2de9378dab9582abbe00117b16e4">More...</a><br /></td></tr>
 <tr class="separator:a6b3b2de9378dab9582abbe00117b16e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac16331a985d00cfea9d3a673d09403a5"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structPoint.html">Point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ac16331a985d00cfea9d3a673d09403a5">pos</a> = {0.0f, 0.0f}</td></tr>
+<tr class="memdesc:ac16331a985d00cfea9d3a673d09403a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">position  <a href="conSteer_8c.html#ac16331a985d00cfea9d3a673d09403a5">More...</a><br /></td></tr>
 <tr class="separator:ac16331a985d00cfea9d3a673d09403a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12b44d385fe1d1ec176c193744022600"><td class="memItemLeft" align="right" valign="top">static FILE *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a12b44d385fe1d1ec176c193744022600">LOG_FILE</a> = NULL</td></tr>
+<tr class="memdesc:a12b44d385fe1d1ec176c193744022600"><td class="mdescLeft">&#160;</td><td class="mdescRight">logfile  <a href="conSteer_8c.html#a12b44d385fe1d1ec176c193744022600">More...</a><br /></td></tr>
 <tr class="separator:a12b44d385fe1d1ec176c193744022600"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a625ce809f1fb82432495f3cf47bcdd"><td class="memItemLeft" align="right" valign="top">static FILE *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a7a625ce809f1fb82432495f3cf47bcdd">DEBUG_FILE</a> = NULL</td></tr>
+<tr class="memdesc:a7a625ce809f1fb82432495f3cf47bcdd"><td class="mdescLeft">&#160;</td><td class="mdescRight">debug file  <a href="conSteer_8c.html#a7a625ce809f1fb82432495f3cf47bcdd">More...</a><br /></td></tr>
 <tr class="separator:a7a625ce809f1fb82432495f3cf47bcdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23f61bf339a161dc46ce0bf62b370803"><td class="memItemLeft" align="right" valign="top">static FILE *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a23f61bf339a161dc46ce0bf62b370803">SWARM_INFO_DEBUG_FILE</a> = NULL</td></tr>
+<tr class="memdesc:a23f61bf339a161dc46ce0bf62b370803"><td class="mdescLeft">&#160;</td><td class="mdescRight">swarm info debug file  <a href="conSteer_8c.html#a23f61bf339a161dc46ce0bf62b370803">More...</a><br /></td></tr>
 <tr class="separator:a23f61bf339a161dc46ce0bf62b370803"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9dd2472c877d25d526495db7556cdb6"><td class="memItemLeft" align="right" valign="top">static char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ab9dd2472c877d25d526495db7556cdb6">file_name</a> [150] ={'\0'}</td></tr>
+<tr class="memdesc:ab9dd2472c877d25d526495db7556cdb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">file name buffer  <a href="conSteer_8c.html#ab9dd2472c877d25d526495db7556cdb6">More...</a><br /></td></tr>
 <tr class="separator:ab9dd2472c877d25d526495db7556cdb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4e0bbc0cc0ffb91120206fb4de60261"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#ad4e0bbc0cc0ffb91120206fb4de60261">tick</a> = 0</td></tr>
+<tr class="memdesc:ad4e0bbc0cc0ffb91120206fb4de60261"><td class="mdescLeft">&#160;</td><td class="mdescRight">tick count  <a href="conSteer_8c.html#ad4e0bbc0cc0ffb91120206fb4de60261">More...</a><br /></td></tr>
 <tr class="separator:ad4e0bbc0cc0ffb91120206fb4de60261"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a836688b96c5117b365f6653413c13c48"><td class="memItemLeft" align="right" valign="top">static struct <a class="el" href="structMessage__Debug.html">Message_Debug</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a836688b96c5117b365f6653413c13c48">msg</a> = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false}</td></tr>
+<tr class="memdesc:a836688b96c5117b365f6653413c13c48"><td class="mdescLeft">&#160;</td><td class="mdescRight">debug message  <a href="conSteer_8c.html#a836688b96c5117b365f6653413c13c48">More...</a><br /></td></tr>
 <tr class="separator:a836688b96c5117b365f6653413c13c48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a289894d76d8883e4f1d0337cd1f32ad1"><td class="memItemLeft" align="right" valign="top">static struct <a class="el" href="structMessage__Goal.html">Message_Goal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a289894d76d8883e4f1d0337cd1f32ad1">syncLink</a> = {0,{0.0f,0.0f,0.0f},false}</td></tr>
+<tr class="memdesc:a289894d76d8883e4f1d0337cd1f32ad1"><td class="mdescLeft">&#160;</td><td class="mdescRight">goal message  <a href="conSteer_8c.html#a289894d76d8883e4f1d0337cd1f32ad1">More...</a><br /></td></tr>
 <tr class="separator:a289894d76d8883e4f1d0337cd1f32ad1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a203a6869d035e85bbd0a7343b99cc938"><td class="memItemLeft" align="right" valign="top">static struct LlaCoor_f&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a203a6869d035e85bbd0a7343b99cc938">att_point</a> = {0.0f,0.0f,0.0f}</td></tr>
+<tr class="memdesc:a203a6869d035e85bbd0a7343b99cc938"><td class="mdescLeft">&#160;</td><td class="mdescRight">attraction pointe  <a href="conSteer_8c.html#a203a6869d035e85bbd0a7343b99cc938">More...</a><br /></td></tr>
 <tr class="separator:a203a6869d035e85bbd0a7343b99cc938"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a647e829dd056d9765bee3bc075cc3ff8"><td class="memItemLeft" align="right" valign="top">static struct LlaCoor_f&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#a647e829dd056d9765bee3bc075cc3ff8">current_pos</a> = {0.0f,0.0f,0.0f}</td></tr>
+<tr class="memdesc:a647e829dd056d9765bee3bc075cc3ff8"><td class="mdescLeft">&#160;</td><td class="mdescRight">drone position  <a href="conSteer_8c.html#a647e829dd056d9765bee3bc075cc3ff8">More...</a><br /></td></tr>
 <tr class="separator:a647e829dd056d9765bee3bc075cc3ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb6745e3f51754d155ecc2936a82c849"><td class="memItemLeft" align="right" valign="top">static struct <a class="el" href="structDummyZ.html">DummyZ</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="conSteer_8c.html#abb6745e3f51754d155ecc2936a82c849">dummy</a> = {0.0f}</td></tr>
+<tr class="memdesc:abb6745e3f51754d155ecc2936a82c849"><td class="mdescLeft">&#160;</td><td class="mdescRight">dummy variable  <a href="conSteer_8c.html#abb6745e3f51754d155ecc2936a82c849">More...</a><br /></td></tr>
 <tr class="separator:abb6745e3f51754d155ecc2936a82c849"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Implementation of the context steering algorithm in paparazzi. </p>
+
+<p class="definition">Definition in file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a4108bd6662c4e6069211bf7bf3aeca79"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4108bd6662c4e6069211bf7bf3aeca79">&#9670;&nbsp;</a></span>ALIGN_MULT</h2>
 
@@ -293,7 +370,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00140">140</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>defines the multiplication parameter for alignment with other drones. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00197">197</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -309,7 +388,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00100">100</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>distance after which the repulsion force calculating function changes from linear to exponential. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00131">131</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -325,7 +406,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00105">105</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>multiplication variable for the repulsion force between aircraft and danger points. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00139">139</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -336,12 +419,14 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DANGER_MULT&#160;&#160;&#160;150.0f</td>
+          <td class="memname">#define DANGER_MULT&#160;&#160;&#160;10.0f</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00090">90</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>multiplier for danger repulson force in context maps- </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00115">115</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -357,7 +442,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00095">95</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>distance for masking for danger points in drone maps. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00123">123</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -373,7 +460,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00115">115</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>minimum distance between aircrafts to calculate the attraction force. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00156">156</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -384,12 +473,14 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DRONE_ATT_MULT&#160;&#160;&#160;0.3f</td>
+          <td class="memname">#define DRONE_ATT_MULT&#160;&#160;&#160;0.6f</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00110">110</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>multiplier for aircraft attraction force in context maps. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00148">148</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -405,7 +496,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00135">135</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>multiplication variable for the repulsion force between aircrafts. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00189">189</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -416,12 +509,15 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DRONE_REP_MULT&#160;&#160;&#160;9.0f</td>
+          <td class="memname">#define DRONE_REP_MULT&#160;&#160;&#160;6.0f</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00130">130</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>multiplier for aircraft repulsion force in context maps. <br  />
+ </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00181">181</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -432,12 +528,14 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define DRONE_TO_CLOSE&#160;&#160;&#160;4.0f</td>
+          <td class="memname">#define DRONE_TO_CLOSE&#160;&#160;&#160;12.5f</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00125">125</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>distance for drones for masking for danger maps. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00173">173</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -453,7 +551,10 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00055">55</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>defines the altitude of the aircraft above ground in meters. </p>
+<p>since the script is only 2 dimensional the altitude of aircrafts is a constant. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00065">65</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -469,7 +570,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00046">46</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>follow offset in X direction(in ENU frame). </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00050">50</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -485,7 +588,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00050">50</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>follow offset in X direction(in ENU frame). </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00057">57</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -501,7 +606,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00065">65</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>defines the radius of Earth in meters. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00079">79</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -517,7 +624,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00085">85</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>is a multiplication parameter for attraction between aircrafts and goal points. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00107">107</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -528,12 +637,14 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define GOAL_MULT&#160;&#160;&#160;50.0f</td>
+          <td class="memname">#define GOAL_MULT&#160;&#160;&#160;5.0f</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00080">80</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>multiplier for goal attraction force in context maps. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00100">100</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -549,7 +660,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00075">75</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>is a multiplier parameter for all the forces calculated. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00093">93</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -560,12 +673,14 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define MAX_SPEED&#160;&#160;&#160;5.0f</td>
+          <td class="memname">#define MAX_SPEED&#160;&#160;&#160;3.0f</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00060">60</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>defines the maximum speed an aircraft can have in any direction. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00072">72</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -581,7 +696,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00070">70</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>defines the number of directional rays(entities) for context(map) </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00086">86</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -597,7 +714,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00145">145</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>defines the multiplication parameter for alignment with previous movement(depicts inertia). </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00204">204</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -608,12 +727,14 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define SWARM_DIST&#160;&#160;&#160;12.5f</td>
+          <td class="memname">#define SWARM_DIST&#160;&#160;&#160;25.0f</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00120">120</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>maximum diatance upto which aircrafts attraction forces are calculated for drone maps. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00165">165</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -667,7 +788,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00197">197</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>adds a point to another. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">b</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00302">302</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -705,7 +836,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00212">212</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>cosine similarity between two points. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">b</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>cosine similarity as float </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00346">346</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -732,7 +873,10 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00314">314</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>Creates a debug file. </p>
+<dl class="section return"><dt>Returns</dt><dd>-1 when error occures, else 0 </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00528">528</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -759,7 +903,10 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00347">347</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>Create a log file object. </p>
+<dl class="section return"><dt>Returns</dt><dd>-1 when error occures, else 0. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00568">568</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -797,7 +944,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00371">371</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>Creates a debug file for swarm info. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">start</td><td>first aircraft id </td></tr>
+    <tr><td class="paramname">end</td><td>last aircraft id </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>-1 when error occures, else 0 </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00604">604</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -835,7 +992,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00215">215</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>distance between two points. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">b</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>distance as float </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00355">355</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -873,7 +1040,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00206">206</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>dot product of two points. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">b</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>dot product as float </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00329">329</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -911,7 +1088,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00432">432</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>gets the metric distance between two points given in the LlaCoor_f format </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">own_pos</td><td>own position as point </td></tr>
+    <tr><td class="paramname">goal_pos</td><td>goal position as point </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00694">694</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -938,14 +1124,16 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Get position in local ENU coordinates (float). </p><dl class="params"><dt>Parameters</dt><dd>
+
+<p>gets position of aircraft in local ENU coordinates(float). </p>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">ac_id</td><td>aircraft id of aircraft info to get </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00428">428</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00685">685</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -983,7 +1171,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00185">185</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>initializes a point. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>x coordinate of point as a float. </td></tr>
+    <tr><td class="paramname">y</td><td>y coordinate of point as a float. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00273">273</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1033,7 +1231,19 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00491">491</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>calculates repulsion forces to danger points. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pos</td><td>position of own aircraft as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">target</td><td>position of danger point as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">cutoff</td><td>distance after which the repulsion function changes from linear to exponential, as float. </td></tr>
+    <tr><td class="paramname">max_val</td><td>multiplication variable for the repulsion force as float. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>repulsion force between the aircraft and danger point as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00787">787</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1077,7 +1287,18 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00480">480</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>calculates attraction forces to goal points. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pos</td><td>position of own aircraft as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">target</td><td>position of goal point as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">max_val</td><td>multiplication variable for the attraction force as float. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>attraction force between the aircraft and goal point as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00768">768</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1121,7 +1342,18 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00457">457</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>calculates repulsion forces to other aircrafts. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pos</td><td>position of own aircraft as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">target</td><td>position of target aircraft as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">max_val</td><td>multiplication variable for the repulsion force as float. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>repulsion force between the aircraft and target as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00731">731</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1165,7 +1397,18 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00468">468</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>calculates attraction forces to other aircrafts. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pos</td><td>position of own aircraft as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">target</td><td>position of target aircraft as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">cutoff</td><td>minimum distance between aircrafts to calculate the attraction force as float. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>attraction force between the aircraft and target as <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00749">749</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1193,7 +1436,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00209">209</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>magnitude of a point. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>magnitude as float </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00337">337</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1221,7 +1473,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00191">191</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>Function to calculate point from an angle. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">radians</td><td>angle in radians as a float. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00284">284</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1259,7 +1520,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00203">203</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>scales down a point. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">s</td><td>a variable to divide as float. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00320">320</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1297,7 +1568,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00200">200</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>scales up a point. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">s</td><td>a variable to multiply as a float. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00311">311</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1335,7 +1616,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00390">390</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>send acceleration info </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">trans</td><td>transport channel </td></tr>
+    <tr><td class="paramname">dev</td><td>link device </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00628">628</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1373,7 +1663,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00396">396</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>send attraction repulsion info </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">trans</td><td>transport channel </td></tr>
+    <tr><td class="paramname">dev</td><td>link device </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00644">644</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1411,7 +1710,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00393">393</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>send goal info </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">trans</td><td>transport channel </td></tr>
+    <tr><td class="paramname">dev</td><td>link device </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00636">636</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1455,7 +1763,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00221">221</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>set point struct with given coordinates. </p>
+<p>if point == null =&gt; do nothing. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">p</td><td>a point to set to as point. </td></tr>
+    <tr><td class="paramname">x</td><td>x coordinate of point as a float. </td></tr>
+    <tr><td class="paramname">y</td><td>y coordinate of point as a float. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00368">368</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1493,7 +1811,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00230">230</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>returns the point with higher magnitude. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">b</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00383">383</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1531,7 +1859,17 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00194">194</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>subtracts a poin from another. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">a</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+    <tr><td class="paramname">b</td><td>a point as a <a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structPoint.html" title="defines Swarm waypoint ids.">Point</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00293">293</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1551,7 +1889,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00510">510</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00806">806</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1571,7 +1909,10 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00399">399</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>initialize swarm </p>
+<p>calculate the direction rays (end)points, register goal, acceleration, and attraction repulsion info sending and create log and debug files </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00651">651</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1599,7 +1940,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00417">417</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>converts from LlaCoor_i to LlaCoor_f by reducing to float value and switching from degrees to radians </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">point</td><td>LlaCoor_i point that is to be converted to LlaCoor_f </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>LlaCoor_f struct </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00673">673</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1637,7 +1987,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00441">441</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>updates the content of aircraft via the periodically sent goal_achieved messages </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">own_pos</td><td>own position as point </td></tr>
+    <tr><td class="paramname">att_point_id</td><td>attraction point id </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00707">707</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1729,7 +2088,25 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00294">294</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>writes debug log to debug file. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">interest_forces</td><td>interest forces of aircrafts. </td></tr>
+    <tr><td class="paramname">danger_forces</td><td>danger forces of aircrafts. </td></tr>
+    <tr><td class="paramname">member_att_forces</td><td>attraction forces between aircrafts. </td></tr>
+    <tr><td class="paramname">member_rep_forces</td><td>repulsion forces between aircrafts. </td></tr>
+    <tr><td class="paramname">score</td><td>score of aircrafts. </td></tr>
+    <tr><td class="paramname">alignmentMap</td><td>allignment of aircraft with other aircrafts. </td></tr>
+    <tr><td class="paramname">selfAlignmentMap</td><td>self allignment map of aircraft. </td></tr>
+    <tr><td class="paramname">mask</td><td>mask map of aircraft. </td></tr>
+    <tr><td class="paramname">alignment_force</td><td>allignment force of aircraft. </td></tr>
+    <tr><td class="paramname">choosen_dir</td><td>chosen direction of aircraft. </td></tr>
+    <tr><td class="paramname">neighbour_dir</td><td>neighbor direction af chosen direction. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00503">503</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1756,7 +2133,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00338">338</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>writes log to log file. </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00555">555</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1794,7 +2173,16 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00359">359</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>writes swarm log to swarm info log file. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">others</td><td>array of positions of aircrafts </td></tr>
+    <tr><td class="paramname">size</td><td>number of aircrafts as int </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00585">585</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1819,7 +2207,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00270">270</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>acceleration </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00455">455</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1843,7 +2233,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00282">282</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>attraction pointe </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00476">476</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1867,7 +2259,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00283">283</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>drone position </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00478">478</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1891,7 +2285,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00274">274</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>debug file </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00463">463</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1915,7 +2311,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00269">269</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>array of points(direction rays) </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00453">453</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1939,7 +2337,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00284">284</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>dummy variable </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00480">480</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1963,7 +2363,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00276">276</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>file name buffer </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00467">467</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -1987,7 +2389,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00273">273</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>logfile </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00461">461</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2011,7 +2415,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00280">280</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>debug message </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00472">472</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2035,7 +2441,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00272">272</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>position </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00459">459</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2059,7 +2467,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00268">268</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>cosine similarity of a sector </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00451">451</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2083,7 +2493,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00275">275</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>swarm info debug file </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00465">465</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2107,7 +2519,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00281">281</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>goal message </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00474">474</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2131,7 +2545,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00277">277</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>tick count </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00469">469</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2155,7 +2571,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00267">267</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>timespec to store time </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00449">449</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2179,7 +2597,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00271">271</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
+<p>velocity </p>
+
+<p class="definition">Definition at line <a class="el" href="conSteer_8c_source.html#l00457">457</a> of file <a class="el" href="conSteer_8c_source.html">conSteer.c</a>.</p>
 
 </div>
 </div>
@@ -2188,7 +2608,7 @@ Variables</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_b84646636ee7315696716ca96083891a.html">paparazzi</a></li><li class="navelem"><a class="el" href="dir_bb0a45d6ec252d6c8d00810400201fec.html">sw</a></li><li class="navelem"><a class="el" href="dir_f9c50f334c091d27669a816f452004d5.html">airborne</a></li><li class="navelem"><a class="el" href="dir_d6398cafc509792b97c39b6a9d75f7a3.html">modules</a></li><li class="navelem"><a class="el" href="dir_b84c2ee116f351ab67644cc94120a27c.html">swarm</a></li><li class="navelem"><a class="el" href="conSteer_8c.html">conSteer.c</a></li>
+    <li class="navelem"><a class="el" href="dir_da9210f775b230a1761c8f81c8ebc184.html">airborne</a></li><li class="navelem"><a class="el" href="dir_83e7da5014d8caf995aff0c70a2aebe4.html">modules</a></li><li class="navelem"><a class="el" href="dir_dcd11aed320fff9340e29c746e42911c.html">swarm</a></li><li class="navelem"><a class="el" href="conSteer_8c.html">conSteer.c</a></li>
     <li class="footer">Generated by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>

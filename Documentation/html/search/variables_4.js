@@ -1,21 +1,7 @@
 var searchData=
 [
-  ['d_5ftimestamps_414',['d_timestamps',['../namespaceeva__behaviour.html#ae46b9f9aa02d505fd459b7ac49e7d034',1,'eva_behaviour']]],
-  ['danger_5fmag_415',['danger_mag',['../namespaceeva__behaviour.html#ac6dd197358d0d2564822693c6b9e9b77',1,'eva_behaviour']]],
-  ['danger_5fmag_5fsub_416',['danger_mag_sub',['../namespaceeva__behaviour.html#a50330d0779ed1d425a8d97a10a949b0b',1,'eva_behaviour']]],
-  ['data_417',['data',['../namespaceeva__behaviour.html#a018aaab493af92ea83348b0db6e32328',1,'eva_behaviour']]],
-  ['debug_5ffile_418',['DEBUG_FILE',['../attRep_8c.html#a7a625ce809f1fb82432495f3cf47bcdd',1,'DEBUG_FILE():&#160;attRep.c'],['../conSteer_8c.html#a7a625ce809f1fb82432495f3cf47bcdd',1,'DEBUG_FILE():&#160;conSteer.c']]],
-  ['df_419',['df',['../namespaceeva__behaviour.html#ab52c96bea30646abf8170f333bbd42b9',1,'eva_behaviour']]],
-  ['dir_420',['DIR',['../namespacewp__mover.html#a49eb6ac4643553d04b85c70646c6786d',1,'wp_mover.DIR()'],['../namespaceeva__behaviour.html#a4ca269cf93df1b512b52174c1a256fe5',1,'eva_behaviour.dir()']]],
-  ['direction_421',['direction',['../namespaceeva__behaviour.html#a99f26e6ee9fcd62f75203b5402df8098',1,'eva_behaviour']]],
-  ['direction_5frays_422',['DIRECTION_RAYS',['../conSteer_8c.html#a1bb4a74dd14364a2d9d8073983c5c0f9',1,'conSteer.c']]],
-  ['dist_423',['dist',['../namespaceeva__behaviour.html#a2578b368dad74bcd4a88bbeeb319a833',1,'eva_behaviour']]],
-  ['dists_424',['dists',['../namespaceeva__behaviour.html#a8a9adf8a9143e81ddf88b35b1408e0b8',1,'eva_behaviour']]],
-  ['dpi_425',['dpi',['../namespaceeva__behaviour.html#ab4024db5b48e2ddd9bcd43847f10f016',1,'eva_behaviour']]],
-  ['dr_5fmin_5fdist_426',['dr_min_dist',['../namespaceeva__behaviour.html#a63b4becbd827cfd566486891786abe68',1,'eva_behaviour']]],
-  ['drone_5fids_427',['drone_ids',['../namespaceeva__behaviour.html#a482d09f83ae03a1c914061af3a8b5c3c',1,'eva_behaviour']]],
-  ['drone_5fpairs_428',['drone_pairs',['../namespaceeva__behaviour.html#aa6d0d99ca33f1dade3de3bcd160e0202',1,'eva_behaviour']]],
-  ['drone_5fpos_429',['drone_pos',['../namespaceeva__behaviour.html#a0ddebd4911fd3d34ab39d2ef41fcda28',1,'eva_behaviour']]],
-  ['drone_5fprotocol_430',['drone_protocol',['../namespaceeva__behaviour.html#a75110749bd529ca14fefbf4ddbc64fd6',1,'eva_behaviour']]],
-  ['dummy_431',['dummy',['../conSteer_8c.html#abb6745e3f51754d155ecc2936a82c849',1,'conSteer.c']]]
+  ['debug_5ffile_278',['DEBUG_FILE',['../attRep_8c.html#a7a625ce809f1fb82432495f3cf47bcdd',1,'DEBUG_FILE():&#160;attRep.c'],['../conSteer_8c.html#a7a625ce809f1fb82432495f3cf47bcdd',1,'DEBUG_FILE():&#160;conSteer.c']]],
+  ['dir_279',['DIR',['../namespacewp__mover.html#a49eb6ac4643553d04b85c70646c6786d',1,'wp_mover']]],
+  ['direction_5frays_280',['DIRECTION_RAYS',['../conSteer_8c.html#a1bb4a74dd14364a2d9d8073983c5c0f9',1,'conSteer.c']]],
+  ['dummy_281',['dummy',['../conSteer_8c.html#abb6745e3f51754d155ecc2936a82c849',1,'conSteer.c']]]
 ];

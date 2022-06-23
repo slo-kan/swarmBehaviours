@@ -102,6 +102,7 @@ $(document).ready(function(){initNavTree('namespacedebug.html',''); initResizabl
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a2a96f0744a86c07596f1442343042d7e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedebug.html#a2a96f0744a86c07596f1442343042d7e">recv_callback</a> (ac_id, pprzMsg)</td></tr>
+<tr class="memdesc:a2a96f0744a86c07596f1442343042d7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function called when a PING message is received and print the message and the sender id.  <a href="namespacedebug.html#a2a96f0744a86c07596f1442343042d7e">More...</a><br /></td></tr>
 <tr class="separator:a2a96f0744a86c07596f1442343042d7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab3bc160055684a401316d921af34a7f6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedebug.html#ab3bc160055684a401316d921af34a7f6">main</a> ()</td></tr>
 <tr class="separator:ab3bc160055684a401316d921af34a7f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -109,8 +110,10 @@ Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a1e59c8ad53fd3ad8260b25ad0d33849a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedebug.html#a1e59c8ad53fd3ad8260b25ad0d33849a">PPRZ_HOME</a> = getenv(&quot;PAPARAZZI_HOME&quot;, path.normpath(path.join(path.dirname(path.abspath(__file__)), '../../../../')))</td></tr>
+<tr class="memdesc:a1e59c8ad53fd3ad8260b25ad0d33849a"><td class="mdescLeft">&#160;</td><td class="mdescRight">add PPRZ_HOME var to Path  <a href="namespacedebug.html#a1e59c8ad53fd3ad8260b25ad0d33849a">More...</a><br /></td></tr>
 <tr class="separator:a1e59c8ad53fd3ad8260b25ad0d33849a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a89187d8e8e8fba509ef9ab5f815d88"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedebug.html#a2a89187d8e8e8fba509ef9ab5f815d88">out</a> = open(&quot;/home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/WP_Mover.debug&quot;,&quot;w&quot;)</td></tr>
+<tr class="memdesc:a2a89187d8e8e8fba509ef9ab5f815d88"><td class="mdescLeft">&#160;</td><td class="mdescRight">main program  <a href="namespacedebug.html#a2a89187d8e8e8fba509ef9ab5f815d88">More...</a><br /></td></tr>
 <tr class="separator:a2a89187d8e8e8fba509ef9ab5f815d88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
@@ -129,7 +132,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="debug_8py_source.html#l00019">19</a> of file <a class="el" href="debug_8py_source.html">debug.py</a>.</p>
+<p class="definition">Definition at line <a class="el" href="debug_8py_source.html#l00027">27</a> of file <a class="el" href="debug_8py_source.html">debug.py</a>.</p>
 
 </div>
 </div>
@@ -159,7 +162,16 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="debug_8py_source.html#l00013">13</a> of file <a class="el" href="debug_8py_source.html">debug.py</a>.</p>
+<p>Function called when a PING message is received and print the message and the sender id. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ac_is</td><td>aircraft id </td></tr>
+    <tr><td class="paramname">recvMsg</td><td>is the teemetry message consisting of waypoint id, its coordiantes. Can be found in messages.xml with the message name "GOAL_ACHIEVED" aad id "76" </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="debug_8py_source.html#l00022">22</a> of file <a class="el" href="debug_8py_source.html">debug.py</a>.</p>
 
 </div>
 </div>
@@ -176,7 +188,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="debug_8py_source.html#l00041">41</a> of file <a class="el" href="debug_8py_source.html">debug.py</a>.</p>
+<p>main program </p>
+
+<p class="definition">Definition at line <a class="el" href="debug_8py_source.html#l00052">52</a> of file <a class="el" href="debug_8py_source.html">debug.py</a>.</p>
 
 </div>
 </div>
@@ -192,7 +206,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="debug_8py_source.html#l00006">6</a> of file <a class="el" href="debug_8py_source.html">debug.py</a>.</p>
+<p>add PPRZ_HOME var to Path </p>
+
+<p class="definition">Definition at line <a class="el" href="debug_8py_source.html#l00011">11</a> of file <a class="el" href="debug_8py_source.html">debug.py</a>.</p>
 
 </div>
 </div>

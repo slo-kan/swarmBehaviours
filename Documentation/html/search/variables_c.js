@@ -1,17 +1,9 @@
 var searchData=
 [
-  ['marker_465',['marker',['../namespaceeva__behaviour.html#a13369eabab3d7ad2773a340258a8fc43',1,'eva_behaviour']]],
-  ['max_5fdist_466',['max_dist',['../namespaceeva__behaviour.html#ab36b416ceb96f44eb4df49531c79e386',1,'eva_behaviour']]],
-  ['max_5ftime_467',['max_time',['../namespaceeva__behaviour.html#a5e43eb4aa833d0da3b3ee7f6a37f6c66',1,'eva_behaviour']]],
-  ['medians_468',['medians',['../namespaceeva__behaviour.html#a4025f7431b2e40f9a424038d0d68da36',1,'eva_behaviour']]],
-  ['member_5fatt_5fmag_469',['member_att_mag',['../namespaceeva__behaviour.html#a0448bed6e93d66bf02b4fc341cef77a5',1,'eva_behaviour']]],
-  ['member_5fatt_5fmag_5fsub_470',['member_att_mag_sub',['../namespaceeva__behaviour.html#a38c84ad131965a95e6153d9a77807871',1,'eva_behaviour']]],
-  ['member_5fmag_471',['member_mag',['../namespaceeva__behaviour.html#aa50df5f2c316b5e301b103f1cb61da3d',1,'eva_behaviour']]],
-  ['member_5fmag_5fsub_472',['member_mag_sub',['../namespaceeva__behaviour.html#afec4518049918609bb23f34f432b555f',1,'eva_behaviour']]],
-  ['member_5frep_5fmag_473',['member_rep_mag',['../namespaceeva__behaviour.html#a47f1dfe8fd93916b91011da50d44732f',1,'eva_behaviour']]],
-  ['member_5frep_5fmag_5fsub_474',['member_rep_mag_sub',['../namespaceeva__behaviour.html#ae3b901a2cfa3783ff19c4098910ca20a',1,'eva_behaviour']]],
-  ['min_5fdist_475',['min_dist',['../namespaceeva__behaviour.html#acb1e2f42f74118fe32d780cebae471ed',1,'eva_behaviour']]],
-  ['min_5fdrone_5fdist_476',['min_drone_dist',['../namespaceeva__behaviour.html#a95965c790ad48d71f469c0a3e0948a02',1,'eva_behaviour']]],
-  ['minor_477',['minor',['../namespaceeva__behaviour.html#ae608a48303b5136eedd583341dadb1b0',1,'eva_behaviour']]],
-  ['msg_478',['msg',['../attRep_8c.html#a836688b96c5117b365f6653413c13c48',1,'msg():&#160;attRep.c'],['../conSteer_8c.html#a836688b96c5117b365f6653413c13c48',1,'msg():&#160;conSteer.c']]]
+  ['scenario_5fdir_301',['SCENARIO_DIR',['../namespacesetupCopters.html#a7e34352bb1ccfbdbb13cbcfb79f7bda2',1,'setupCopters']]],
+  ['sector_5fcos_5fsim_302',['SECTOR_COS_SIM',['../conSteer_8c.html#a46c8772bc9936e87038ddba2cc9698b8',1,'conSteer.c']]],
+  ['spawn_5fpoints_303',['SPAWN_POINTS',['../namespacewp__mover.html#a68c0bb81b5f447274aab00178c376978',1,'wp_mover']]],
+  ['str_304',['str',['../namespacewp__mover.html#a4b99ff73a8a869319570237b5c57ab03',1,'wp_mover']]],
+  ['swarm_5finfo_5fdebug_5ffile_305',['SWARM_INFO_DEBUG_FILE',['../conSteer_8c.html#a23f61bf339a161dc46ce0bf62b370803',1,'conSteer.c']]],
+  ['synclink_306',['syncLink',['../attRep_8c.html#a289894d76d8883e4f1d0337cd1f32ad1',1,'syncLink():&#160;attRep.c'],['../conSteer_8c.html#a289894d76d8883e4f1d0337cd1f32ad1',1,'syncLink():&#160;conSteer.c']]]
 ];

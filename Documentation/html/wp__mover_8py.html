@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SwarmBehavioursOVGU: /home/finkensim/finken/paparazzi/sw/tools/ovgu_swarm/wp_mover.py File Reference</title>
+<title>SwarmBehavioursOVGU: tools/ovgu_swarm/wp_mover.py File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -109,8 +109,10 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class Definitions #.  <a href="classwp__mover_1_1Point.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwp__mover_1_1ThreadSafe__Logger.html">ThreadSafe_Logger</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deination of a class, <a class="el" href="classwp__mover_1_1ThreadSafe__Logger.html" title="Deination of a class, ThreadSafe_Logger.">ThreadSafe_Logger</a>.  <a href="classwp__mover_1_1ThreadSafe__Logger.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwp__mover_1_1WPMover.html">WPMover</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main Class Definition.  <a href="classwp__mover_1_1WPMover.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
@@ -121,25 +123,34 @@ Namespaces</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:aadf0fab5e236f5e37ba75fa9a08f91ed"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#aadf0fab5e236f5e37ba75fa9a08f91ed">getDistance</a> (<a class="el" href="structPoint.html">Point</a> own_pos, <a class="el" href="structPoint.html">Point</a> goal_pos)</td></tr>
+<tr class="memdesc:aadf0fab5e236f5e37ba75fa9a08f91ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the metric distance between two points given in the LlaCoor_f format.  <a href="namespacewp__mover.html#aadf0fab5e236f5e37ba75fa9a08f91ed">More...</a><br /></td></tr>
 <tr class="separator:aadf0fab5e236f5e37ba75fa9a08f91ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4bd831def148acd01cbbc35ddf52be35"><td class="memItemLeft" align="right" valign="top">Tuple[int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a4bd831def148acd01cbbc35ddf52be35">convertToInt</a> (<a class="el" href="structPoint.html">Point</a> point)</td></tr>
+<tr class="memdesc:a4bd831def148acd01cbbc35ddf52be35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a LLA-Point from float radial representation to a int degree representation.  <a href="namespacewp__mover.html#a4bd831def148acd01cbbc35ddf52be35">More...</a><br /></td></tr>
 <tr class="separator:a4bd831def148acd01cbbc35ddf52be35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71068c8bcb29e4a9b175455e77185efa"><td class="memItemLeft" align="right" valign="top">Tuple[float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a71068c8bcb29e4a9b175455e77185efa">convertToDegree</a> (<a class="el" href="structPoint.html">Point</a> point)</td></tr>
+<tr class="memdesc:a71068c8bcb29e4a9b175455e77185efa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a LLA-Point from float radial representation to float degree representation.  <a href="namespacewp__mover.html#a71068c8bcb29e4a9b175455e77185efa">More...</a><br /></td></tr>
 <tr class="separator:a71068c8bcb29e4a9b175455e77185efa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1525142286cce18af992c625882cf480"><td class="memItemLeft" align="right" valign="top">PprzMessage&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a1525142286cce18af992c625882cf480">createMSG</a> (int wp_id, int ac_id, <a class="el" href="structPoint.html">Point</a> point)</td></tr>
+<tr class="memdesc:a1525142286cce18af992c625882cf480"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates PprzMessage.  <a href="namespacewp__mover.html#a1525142286cce18af992c625882cf480">More...</a><br /></td></tr>
 <tr class="separator:a1525142286cce18af992c625882cf480"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48bb45c33ba4a4cf9cf199c58bc4920d"><td class="memItemLeft" align="right" valign="top">Tuple[List[<a class="el" href="structPoint.html">Point</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a48bb45c33ba4a4cf9cf199c58bc4920d">get_szenario</a> (filename)</td></tr>
+<tr class="memdesc:a48bb45c33ba4a4cf9cf199c58bc4920d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input Function.  <a href="namespacewp__mover.html#a48bb45c33ba4a4cf9cf199c58bc4920d">More...</a><br /></td></tr>
 <tr class="separator:a48bb45c33ba4a4cf9cf199c58bc4920d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a49eb6ac4643553d04b85c70646c6786d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a49eb6ac4643553d04b85c70646c6786d">DIR</a> = path.dirname(path.abspath(__file__))</td></tr>
+<tr class="memdesc:a49eb6ac4643553d04b85c70646c6786d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Holds the directory path where the file is placed.  <a href="namespacewp__mover.html#a49eb6ac4643553d04b85c70646c6786d">More...</a><br /></td></tr>
 <tr class="separator:a49eb6ac4643553d04b85c70646c6786d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e59c8ad53fd3ad8260b25ad0d33849a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a1e59c8ad53fd3ad8260b25ad0d33849a">PPRZ_HOME</a> = getenv(&quot;PAPARAZZI_HOME&quot;, path.normpath(path.join(DIR, '../../../')))</td></tr>
+<tr class="memdesc:a1e59c8ad53fd3ad8260b25ad0d33849a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Environment variable of the path.  <a href="namespacewp__mover.html#a1e59c8ad53fd3ad8260b25ad0d33849a">More...</a><br /></td></tr>
 <tr class="separator:a1e59c8ad53fd3ad8260b25ad0d33849a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61569f2965b7a369eb10b6d75d410d11"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a61569f2965b7a369eb10b6d75d410d11">int</a></td></tr>
+<tr class="memdesc:a61569f2965b7a369eb10b6d75d410d11"><td class="mdescLeft">&#160;</td><td class="mdescRight">FIRST_ATT_ID defines the first attraction id, also influences behaviour across multiple files.  <a href="namespacewp__mover.html#a61569f2965b7a369eb10b6d75d410d11">More...</a><br /></td></tr>
 <tr class="separator:a61569f2965b7a369eb10b6d75d410d11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b99ff73a8a869319570237b5c57ab03"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a4b99ff73a8a869319570237b5c57ab03">str</a></td></tr>
+<tr class="memdesc:a4b99ff73a8a869319570237b5c57ab03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Holds the log-file name.  <a href="namespacewp__mover.html#a4b99ff73a8a869319570237b5c57ab03">More...</a><br /></td></tr>
 <tr class="separator:a4b99ff73a8a869319570237b5c57ab03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe24053e05b5c4202521d89699db6044"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#afe24053e05b5c4202521d89699db6044">ATT_POINTS</a></td></tr>
 <tr class="separator:afe24053e05b5c4202521d89699db6044"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,6 +169,7 @@ Variables</h2></td></tr>
 <tr class="memitem:a3831eb5a46d13e283ecae09857aa6f49"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a3831eb5a46d13e283ecae09857aa6f49">REP_IDS</a></td></tr>
 <tr class="separator:a3831eb5a46d13e283ecae09857aa6f49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58695bbc8b9ffb2b44d1aeff745dbe8a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewp__mover.html#a58695bbc8b9ffb2b44d1aeff745dbe8a">WPMover</a></td></tr>
+<tr class="memdesc:a58695bbc8b9ffb2b44d1aeff745dbe8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates log-file and writes to it the flightplan data.  <a href="namespacewp__mover.html#a58695bbc8b9ffb2b44d1aeff745dbe8a">More...</a><br /></td></tr>
 <tr class="separator:a58695bbc8b9ffb2b44d1aeff745dbe8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
@@ -165,7 +177,7 @@ Variables</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_b84646636ee7315696716ca96083891a.html">paparazzi</a></li><li class="navelem"><a class="el" href="dir_bb0a45d6ec252d6c8d00810400201fec.html">sw</a></li><li class="navelem"><a class="el" href="dir_b4dd84daa5f81ad445826c957210d2cc.html">tools</a></li><li class="navelem"><a class="el" href="dir_241864e88ecd3a6d3b6d1c30bec81529.html">ovgu_swarm</a></li><li class="navelem"><a class="el" href="wp__mover_8py.html">wp_mover.py</a></li>
+    <li class="navelem"><a class="el" href="dir_4eeb864c4eec08c7d6b9d3b0352cfdde.html">tools</a></li><li class="navelem"><a class="el" href="dir_ea3b7eeeaaccf1b49ad0edd2dcbb3b2c.html">ovgu_swarm</a></li><li class="navelem"><a class="el" href="wp__mover_8py.html">wp_mover.py</a></li>
     <li class="footer">Generated by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.17 </li>
