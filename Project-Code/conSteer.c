@@ -30,7 +30,12 @@
 #include "generated/airframe.h"
 #include "generated/flight_plan.h"
 #include "subsystems/datalink/telemetry.h"
+#include "errno.h"
+#include "sys/stat.h"
+#include "string.h"
+#include "stdio.h"
 #include "math.h"
+#include "time.h"
 
 #include "subsystems/navigation/waypoints.h"
 #include "state.h"
@@ -60,11 +65,6 @@
 #define GLOBE_RADIUS 6371000
 #endif
 
-// array initial size parameter
-#ifndef ARRAY_INIT_SIZE
-#define ARRAY_INIT_SIZE 16
-#endif
-
 // ndr parameter
 #ifndef NUM_DIRECTION_RAYS
 #define NUM_DIRECTION_RAYS 8
@@ -77,27 +77,17 @@
 
 // g_mult parameter
 #ifndef GOAL_MULT
-#define GOAL_MULT 1.75f
+#define GOAL_MULT 50.0f //8.0f
 #endif
 
-// g_lim parameter
-#ifndef GOAL_LIMIT
-#define GOAL_LIMIT 30.0f
-#endif
-
-// g_sig parameter
-#ifndef GOAL_SIGMA
-#define GOAL_SIGMA -3.0f
-#endif
-
-// g_gam parameter
-#ifndef GOAL_GAMMA
-#define GOAL_GAMMA 25.0f
+// g_max parameter
+#ifndef GOAL_MAX
+#define GOAL_MAX 4.0f
 #endif
 
 // d_mult parameter
 #ifndef DANGER_MULT
-#define DANGER_MULT 1.75f
+#define DANGER_MULT 150.0f //16.0f
 #endif
 
 // d_tc parameter
@@ -105,80 +95,56 @@
 #define DANGER_TO_CLOSE 8.0f
 #endif
 
-// d_lim parameter
-#ifndef DANGER_LIMIT
-#define DANGER_LIMIT 40.0f
-#endif
-
 // d_co parameter
 #ifndef DANGER_CUT_OFF
 #define DANGER_CUT_OFF 5.0f
 #endif
 
-// d_sig parameter
-#ifndef DANGER_SIGMA
-#define DANGER_SIGMA 3.85f
-#endif
-
-// d_gam parameter
-#ifndef DANGER_GAMMA
-#define DANGER_GAMMA 18.5f
-#endif
-
-// d_alf parameter
-#ifndef DANGER_ALPHA
-#define DANGER_ALPHA 20.0f
+// d_max parameter
+#ifndef DANGER_MAX
+#define DANGER_MAX 4.0f
 #endif
 
 // da_mult parameter
-#ifndef DRONE_MULT
-#define DRONE_ATT_MULT 4.0f
-#endif
-
-// da_lim parameter
-#ifndef DRONE_ATT_LIMIT
-#define DRONE_ATT_LIMIT 40.0f
+#ifndef DRONE_ATT_MULT
+#define DRONE_ATT_MULT 0.3f //0.6f
 #endif
 
 // da_co parameter
 #ifndef DRONE_ATT_CUT_OFF
-#define DRONE_ATT_CUT_OFF 18.9f
+#define DRONE_ATT_CUT_OFF 20.0f 
 #endif
 
 // da_sd parameter
 #ifndef SWARM_DIST
-#define SWARM_DIST 12.0f
+#define SWARM_DIST 12.5f //25.0f
 #endif
 
 // dr_dtc parameter
 #ifndef DRONE_TO_CLOSE
-#define DRONE_TO_CLOSE 4.0f
+#define DRONE_TO_CLOSE 4.0f //12.5f
 #endif
 
 // dr_mult parameter
-#ifndef DRONE_MULT
-#define DRONE_REP_MULT 4
+#ifndef DRONE_REP_MULT
+#define DRONE_REP_MULT 9.0f //6.0f
 #endif
 
-// dr_lim parameter
-#ifndef DRONE_REP_LIMIT
-#define DRONE_REP_LIMIT 30.0f
+// dr_max parameter
+#ifndef DRONE_REP_MAX
+#define DRONE_REP_MAX 10.0f
 #endif
 
-// dr_sig parameter
-#ifndef DRONE_REP_SIGMA
-#define DRONE_REP_SIGMA 10.0f
+// mult parameter for alignment with other drones
+#ifndef ALIGN_MULT
+#define ALIGN_MULT 1.25f  //1/8 -> for goal mult = 8
 #endif
 
-// dr_gam parameter
-#ifndef DRONE_REP_GAMMA
-#define DRONE_REP_GAMMA 1.5f
+// mult parameter for alignment with previous movement
+#ifndef SELF_ALIGN_MULT
+#define SELF_ALIGN_MULT 0.5f  //1/12 -> for goal mult = 8
 #endif
 
-// dr_alf parameter
-#ifndef DRONE_REP_ALPHA
-#define DRONE_REP_ALPHA 0.1f
-#endif
 
 #ifndef SWARM_WAYPOINT_ID
 #error "Please define SWARM_WAYPOINT_ID with the ID of FOLLOW wp"
@@ -197,7 +163,7 @@
 #endif
 
 #ifndef LAST_DANGER_POINT_ID
-#error "Please define the  LAST_REPELL_POINT_ID"
+#error "Please define the  LAST_DANGER_POINT_ID"
 #endif
 
 #ifndef FIRST_SWARM_MEMBER_ID
@@ -208,53 +174,40 @@
 #error "Please define the LAST_SWARM_MEMBER_ID"
 #endif
 
-#ifndef Pi
-#define Pi 3.14159265359
-#endif
 
-
+// class/structure Point
 typedef struct Point {
   float x;
   float y;
-  float z;
 } Point;
 
 
-static Point init_point(float x, float y, float z)
+static Point init_point(float x, float y)
 {
-  Point new = {x,y,z};
+  Point new = {x,y};
   return new;
 }
 
 static Point point_from_angle(float radians)
-{ return init_point(cosf(radians),sinf(radians),0.0f); }
-
-static Point rotate2D(Point* a, float radians)
-{ return init_point(cosf(radians)*a->x - sinf(radians)*a->y,cosf(radians)*a->x + sinf(radians)*a->y, a->z); }
+{ return init_point(cosf(radians),sinf(radians)); }
 
 static Point sub_points(Point* a, Point* b)
-{ return init_point((a->x - b->x), (a->y - b->y), (a->z - b->z)); }
+{ return init_point((a->x - b->x), (a->y - b->y)); }
 
 static Point add_points(Point* a, Point* b)
-{ return init_point((a->x + b->x), (a->y + b->y), (a->z + b->z)); }
-
-/*static Point mult_points(Point* a, Point* b)
-{ return init_point((a->x * b->x), (a->y * b->y), (a->z * b->z)); }
-
-static Point div_points(Point* a, Point* b)
-{ return init_point((a->x / b->x), (a->y / b->y), (a->z / b->z)); }*/
+{ return init_point((a->x + b->x), (a->y + b->y)); }
 
 static Point scale_up_points(Point* a, float s)
-{ return init_point((a->x * s), (a->y * s), (a->z * s)); }
+{ return init_point((a->x * s), (a->y * s)); }
 
 static Point scale_down_points(Point* a, float s)
-{ return init_point((a->x / s), (a->y / s), (a->z / s)); }
+{ return init_point((a->x / s), (a->y / s)); }
 
 static float dot(Point* a, Point* b)
-{ return (a->x*b->x + a->y*b->y + a->z*b->z); }
+{ return (a->x*b->x + a->y*b->y); }
 
 static float mag(Point* a)
-{ return sqrtf(a->x*a->x + a->y*a->y + a->z*a->z); }
+{ return sqrtf(a->x*a->x + a->y*a->y ); }//+ a->z*a->z); }
 
 static float cosine_sim(Point* a, Point* b)
 { return dot(a,b)/(mag(a)*mag(b)); }
@@ -262,21 +215,17 @@ static float cosine_sim(Point* a, Point* b)
 static float dist_points(Point* a, Point* b)
 { 
   Point dist = sub_points(a,b); 
-  return sqrtf(dist.x*dist.x+dist.y*dist.y+dist.z*dist.z); 
+  return mag(&dist); 
 }
 
-static void set_points(Point* p, float x, float y, float z)
+static void set_points(Point* p, float x, float y)
 { 
   if(p!=NULL) 
   {
     p->x = x; 
     p->y = y;
-    p->z = z;
   }
 }
-
-static void set_points_p(Point* p, Point* other)
-{ set_points(p,other->x,other->y,other->z); }
 
 static Point strongest_force(Point* a, Point* b)
 {
@@ -286,6 +235,7 @@ static Point strongest_force(Point* a, Point* b)
 
 
 
+//simple data structures
 struct Message_Debug {
    struct EnuCoor_f own_pos;
    struct EnuCoor_f target_pos;
@@ -307,27 +257,138 @@ struct Message_Goal {
    struct LlaCoor_f own_pos;  
    bool reached;
 };
+struct DummyZ {
+   float z;
+};
 
 
-static float SECTOR_COS_SIM = cosf(Pi/NUM_DIRECTION_RAYS);
-static Point DIRECTION_RAYS[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
-static Point acc = {0.0f, 0.0f, 0.0f};
-static Point vel = {0.0f, 0.0f, 0.0f};
-static Point pos = {0.0f, 0.0f, 0.0f};
+
+//global variables
+static struct timespec tp = {0, 0};
+static float SECTOR_COS_SIM = cosf(M_PI/NUM_DIRECTION_RAYS);
+static Point DIRECTION_RAYS[NUM_DIRECTION_RAYS] = {{0.0f,0.0f}};
+static Point acc = {0.0f, 0.0f};
+static Point vel = {0.0f, 0.0f};
+static Point pos = {0.0f, 0.0f};
+static FILE* LOG_FILE = NULL;
+static FILE* DEBUG_FILE = NULL;
+static FILE* SWARM_INFO_DEBUG_FILE = NULL;
+static char file_name[150]={'\0'}; 
+static int tick = 0;
+
+
 static struct Message_Debug msg = {{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f},0,{0.0f,0.0f,0.0f},0.0f,0.0f,false,{0.0f,0.0f,0.0f},0.0f,0.0f,false};
 static struct Message_Goal syncLink = {0,{0.0f,0.0f,0.0f},false};
 static struct LlaCoor_f att_point = {0.0f,0.0f,0.0f};
 static struct LlaCoor_f current_pos = {0.0f,0.0f,0.0f};
-
+static struct DummyZ dummy = {0.0f};
 
 //LlaCoor_f = {lat,lon,alt} specified in radients in a floating point number format(as specified in the paparazzi documentation)
 //LlaCoor_i = {lat,lon,alt} specified in degrees in an integer format(as specified in the paparazzi documentation)
-//EnuCoor_i = {lat,lon,alt} specified in meters in an integer format(as specified in the paparazzi documentation)
-//EnuCoor_f = {lat,lon,alt} specified in meters in an floating point number format(as specified in the paparazzi documentation)
+//EnuCoor_i = {x,y,z} specified in meters in an integer format(as specified in the paparazzi documentation)
+//EnuCoor_f = {x,y,z} specified in meters in an floating point number format(as specified in the paparazzi documentation)
 
+
+
+//functions
+static void write_to_debug_file(Point* interest_forces, Point* danger_forces, Point* member_att_forces, Point* member_rep_forces, //Point* total_forces
+ float* score, float* alignmentMap, float* selfAlignmentMap, bool* mask, Point alignment_force, int choosen_dir, int neighbour_dir)
+{
+  if(DEBUG_FILE != NULL)
+  {
+    fprintf(DEBUG_FILE,"%11.6f, %10.4f, %10.4f, %10.4f, %10.4f, %10.4f, %10.4f, %3d, %3d", 
+            get_sys_time_float(), pos.x, pos.y, vel.x, vel.y, acc.x, acc.y, choosen_dir, neighbour_dir);
+    fprintf(DEBUG_FILE,", %8.4f, %8.4f", alignment_force.x, alignment_force.y );
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %1d", mask[it]);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %8.4f", score[it]);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %8.4f", alignmentMap[it]);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %8.4f", selfAlignmentMap[it]);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %10.4f, %10.4f", interest_forces[it].x, interest_forces[it].y);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %10.4f, %10.4f", member_att_forces[it].x, member_att_forces[it].y);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %10.4f, %10.4f", member_rep_forces[it].x, member_rep_forces[it].y);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %10.4f, %10.4f", danger_forces[it].x, danger_forces[it].y);
+    fprintf(DEBUG_FILE,"\n");
+  }
+}
+
+static int create_debug_file()
+{
+  sprintf(file_name,"/home/finkensim/paparazzi/logs/ConSteer/ac_%d_debug.csv",AC_ID);
+  if(mkdir("/home/finkensim/paparazzi/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  if(mkdir("/home/finkensim/paparazzi/logs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  if(mkdir("/home/finkensim/paparazzi/logs/ConSteer", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  DEBUG_FILE = fopen(file_name,"w");
+  if(DEBUG_FILE == NULL) printf("\nFile could not be opened!");
+  else{
+    fprintf(DEBUG_FILE,"Startup-Time: %11.6f\n",get_sys_time_float());
+    fprintf(DEBUG_FILE,"timestamp, pos_x, pos_y, vel_x, vel_y, acc_x, acc_y, choosen_dir, neighbour_dir, alignment_force_x, alignment_force_y");
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %d_mask",it);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %d_score",it);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %d_align",it);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %d_self_align",it);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %d_max_interest_force_x, %d_max_interest_force_y",it,it);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %d_max_member_att_force_x, %d_max_member_att_force_y",it,it);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %d_max_member_rep_force_x, %d_max_member_rep_force_y",it,it);
+    for (int it=0; it<NUM_DIRECTION_RAYS; ++it) fprintf(DEBUG_FILE,", %d_max_danger_force_x, %d_max_danger_force_y",it,it);
+    fprintf(DEBUG_FILE,"\n");
+  }
+  return 0;
+}
+
+static void write_to_log_file()
+{
+  if(LOG_FILE != NULL)
+  {
+    fprintf(LOG_FILE,"[%11.6f] pos: %12.8f, %12.8f / %10.4f, %10.4f; vel: %10.4f, %10.4f; acc: %10.4f, %10.4f\n",
+            get_sys_time_float(), current_pos.lat*(180/M_PI), current_pos.lon*(180/M_PI), pos.x, pos.y, vel.x, vel.y, acc.x, acc.y);
+  }
+}
+
+static int create_log_file()
+{
+  sprintf(file_name,"/home/finkensim/paparazzi/logs/ConSteer/ac_%d.log",AC_ID);
+  if(mkdir("/home/finkensim/paparazzi/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  if(mkdir("/home/finkensim/paparazzi/logs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  if(mkdir("/home/finkensim/paparazzi/logs/ConSteer", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  LOG_FILE = fopen(file_name,"w");
+  if(LOG_FILE == NULL) printf("\nFile could not be opened!");
+  else fprintf(LOG_FILE,"Startup-Time: %11.6f\n",get_sys_time_float());
+  return 0;
+}
+
+static void write_to_swarm_info_debug_file(Point* others, int size)
+{
+  if(SWARM_INFO_DEBUG_FILE != NULL)
+  {
+    clock_gettime(CLOCK_MONOTONIC,&tp);
+    fprintf(SWARM_INFO_DEBUG_FILE,"%11.6f, %li.%09li, %10.4f, %10.4f",
+            get_sys_time_float(), tp.tv_sec, tp.tv_nsec, pos.x, pos.y);
+    for (int it=0; it<size; ++it) fprintf(SWARM_INFO_DEBUG_FILE,", %10.4f, %10.4f", others[it].x, others[it].y);
+    fprintf(SWARM_INFO_DEBUG_FILE,"\n");
+  }
+}
+
+static int create_swarm_info_debug_file(int start, int end)
+{
+  sprintf(file_name,"/home/finkensim/paparazzi/logs/ConSteer/ac_%d_swarm_info.csv",AC_ID);
+  if(mkdir("/home/finkensim/paparazzi/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  if(mkdir("/home/finkensim/paparazzi/logs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  if(mkdir("/home/finkensim/paparazzi/logs/ConSteer", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)<0 && errno!=EEXIST) return -1;
+  SWARM_INFO_DEBUG_FILE = fopen(file_name,"w");
+  if(SWARM_INFO_DEBUG_FILE == NULL) printf("\nFile could not be opened!");
+  else
+  { 
+    clock_gettime(CLOCK_MONOTONIC,&tp);
+    fprintf(SWARM_INFO_DEBUG_FILE,"Startup-Time: %11.6f at %li.%09li sec\n",get_sys_time_float(), tp.tv_sec, tp.tv_nsec);
+    fprintf(SWARM_INFO_DEBUG_FILE,"drone_timestamp, sys_timestamp, own_x, own_y");
+    for (int it=start; it<=end; ++it) fprintf(SWARM_INFO_DEBUG_FILE,", member_%d_x, member_%d_y", it, it);
+    fprintf(SWARM_INFO_DEBUG_FILE,"\n");
+  }
+  return 0;
+}
 
 static void send_acc_info(struct transport_tx *trans, struct link_device *dev) 
-{	pprz_msg_send_ACC(trans, dev, AC_ID, &acc.x, &acc.y, &acc.z); }
+{	pprz_msg_send_ACC(trans, dev, AC_ID, &acc.x, &acc.y, &dummy.z); }
 
 static void send_goal_info(struct transport_tx *trans, struct link_device *dev) 
 {	pprz_msg_send_GOAL_ACHIEVED(trans, dev, AC_ID, &syncLink.wp_id, &syncLink.own_pos.lat, &syncLink.own_pos.lon, &syncLink.own_pos.alt, (uint8_t*)&syncLink.reached); }
@@ -337,14 +398,19 @@ static void send_attract_and_repulse_info(struct transport_tx *trans, struct lin
 
 void swarm_init(void) 
 {
+  int start = FIRST_SWARM_MEMBER_ID;
+  int end = LAST_SWARM_MEMBER_ID;
   for(int it=0; it<NUM_DIRECTION_RAYS; ++it)
   {
-    float angle = it * (2*Pi)/NUM_DIRECTION_RAYS;
+    float angle = it * (2*M_PI)/NUM_DIRECTION_RAYS; //M_PI
     DIRECTION_RAYS[it] = point_from_angle(angle);                                                                                                                                                                                                                                                         ;
   }
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GOAL_ACHIEVED, send_goal_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACC, send_acc_info);
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATTREP, send_attract_and_repulse_info);
+  if(create_log_file()<0) printf("\nERROR: Could not open log file due to directory access/creation issues!");
+  if(create_debug_file()<0) printf("\nERROR: Could not open debug file due to directory access/creation issues!");
+  if(create_swarm_info_debug_file(start,end)<0) printf("\nERROR: Could not open debug file due to directory access/creation issues!");
 }
 
 //converts from LlaCoor_i to LlaCoor_f by reducing to float value and switching from degrees to radients
@@ -388,52 +454,49 @@ static void updateSyncLinkMsg(struct LlaCoor_f* own_pos, uint8_t att_point_id)
 
 
 //calculate repulsion forces to other drones
-static Point linear_Repulsion(Point* pos, Point* target, float limit, float sigma, float gamma, float alpha)
+static Point linear_Repulsion(Point* pos, Point* target, float max_val)
 {
   Point force = sub_points(target, pos);
   float magnitude = mag(&force);
-  float d = fminf(magnitude, limit);
-  float strength = fmaxf((sigma/(d+alpha)-gamma),0)*(-1);
+  float d = magnitude; //fminf(magnitude, limit);
+  float strength = (-1)*max_val*GRAVITY/fmaxf(1.0f,d);
   force = scale_up_points(&force,(strength/magnitude));
   return force;
 }
 
 // calculate attraction forces to other drones
-static Point log_Attraction(Point* pos, Point* target, float limit, float cutOff)
+static Point log_Attraction(Point* pos, Point* target, float cutOff)
 {
   Point force = sub_points(target, pos);
   float magnitude = mag(&force);
-  float strength;
-  float d = fminf(magnitude, limit);
-  //strength = GRAVITY*d-10; //simple linear
-  if(d>cutOff) strength = log(d-(cutOff-GRAVITY/2))*GRAVITY; 
-  else strength = 0;
+  float d = magnitude; //fminf(magnitude, limit);
+  float strength = 0;
+  if(d>cutOff) strength = log(1+(d-cutOff))*GRAVITY; 
   force = scale_up_points(&force,(strength/magnitude));
   return force;
 }
 
-
 // calculate attraction forces with GOAL_VECTORS
-static Point linear_Attraction(Point* pos, Point* target, float limit, float sigma, float gamma)
+static Point linear_Attraction(Point* pos, Point* target, float max_val)
 {
   Point force = sub_points(target, pos);
   float magnitude = mag(&force);
-  float d = fminf(magnitude, limit);
-  float strength = (GRAVITY/sigma)*d+gamma;
+  float d = magnitude; //fminf(magnitude, limit);
+  float strength = (GRAVITY * max_val)/fmaxf(d,1.0f);
   force = scale_up_points(&force,(strength/magnitude));
   return force;
 }
 
 // calculate repulsion force with DANGER_VECTORS
-static Point limExp_Repulsion(Point* pos, Point* target, float limit, float cutOff, float sigma, float gamma, float alpha)
+static Point limExp_Repulsion(Point* pos, Point* target, float cutOff, float max_val)
 {
   Point force = sub_points(target, pos);
   float magnitude = mag(&force);
   float strength;
-  float d = fminf(magnitude, limit);
-  if (d<cutOff) strength = GRAVITY * (d/2 - limit) / sigma; //linear_rep_limit_close
-  else strength = -1*expf(-1*(GRAVITY * (alpha*logf(d) - gamma)/sigma)); //exp_rep_mid_far
-   force = scale_up_points(&force,(strength/magnitude));
+  float d = magnitude; //fminf(magnitude, limit);
+  if (d<cutOff) strength = (-1)*(GRAVITY * max_val)/fmaxf(d,1.0f); //linear_rep_limit_close
+  else strength = (-1)*expf((-1)* GRAVITY * logf(d));     //exp_rep_limit_mid_far
+  force = scale_up_points(&force,(strength/magnitude));
   return force;
 }
 
@@ -451,22 +514,39 @@ void swarm_follow_wp(void)
     + Initialize Variables +
     ++++++++++++++++++++++++
   */
-  set_points(&pos, getPositionEnu_f(AC_ID)->x, getPositionEnu_f(AC_ID)->y, getPositionEnu_f(AC_ID)->z); 
-  set_points(&vel, acInfoGetVelocityEnu_f(AC_ID)->x, acInfoGetVelocityEnu_f(AC_ID)->y, acInfoGetVelocityEnu_f(AC_ID)->z);
-  Point danger, goal, other_pos, other_vel;
-  Point alignment_force; set_points_p(&alignment_force, &vel);
-  Point resulting_force = {0.0f,0.0f,0.0f};
-  Point max_intrest_forces[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
-  Point max_danger_forces[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
-  Point max_member_atts[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
-  Point max_member_reps[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
-  Point total_forces[NUM_DIRECTION_RAYS] = {{0.0f,0.0f,0.0f}};
+  int AC_AMOUNT = (LAST_SWARM_MEMBER_ID-FIRST_SWARM_MEMBER_ID+1);
+  set_points(&pos, stateGetPositionEnu_f()->x, stateGetPositionEnu_f()->y); 
+  set_points(&vel, stateGetSpeedEnu_f()->x, stateGetSpeedEnu_f()->y);
+  Point danger, goal, other_pos, other_vel, dist, att_force, rep_force;
+  Point alignment_force = {0.0f, 0.0f};
+  Point scaled_force,resulting_force = {0.0f,0.0f};
+  Point max_interest_forces[NUM_DIRECTION_RAYS] = {{0.0f,0.0f}};
+  Point max_danger_forces[NUM_DIRECTION_RAYS] = {{0.0f,0.0f}};
+  Point max_member_atts[NUM_DIRECTION_RAYS] = {{0.0f,0.0f}};
+  Point max_member_reps[NUM_DIRECTION_RAYS] = {{0.0f,0.0f}};
+  Point other_acs[AC_AMOUNT];
   bool mask[NUM_DIRECTION_RAYS] = {true};
-  float member_dist, alignSim, constrainSim, rightMag, leftMag, magnitude; 
-  float alignment_counter = 1.0f;
+  float score[NUM_DIRECTION_RAYS] = {0.0f};
+  float alignmentMap[NUM_DIRECTION_RAYS] = {0.0f};
+  float selfAlignmentMap[NUM_DIRECTION_RAYS] = {0.0f};
+  float member_dist, alignSim, velSim, magnitude;
+  float alignment_counter = 0.0f;
   int leftIdx,rightIdx,neighborIdx;
   int maxIdx = 0;
 
+  for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx) 
+  {
+    mask[idx] = true; 
+    score[idx] = 0.0f;
+    alignmentMap[idx] = 0.0f;
+    selfAlignmentMap[idx] = 0.0f;
+    set_points((max_interest_forces+idx), 0.0f,0.0f);
+    set_points((max_danger_forces+idx), 0.0f,0.0f);
+    set_points((max_member_atts+idx), 0.0f,0.0f);
+    set_points((max_member_reps+idx), 0.0f,0.0f);
+  }
+  for(int idx=0; idx<(LAST_SWARM_MEMBER_ID-FIRST_SWARM_MEMBER_ID+1); ++idx)
+    set_points((other_acs+idx), 0.0f,0.0f);
   
   /*
    +++++++++++++++++++++++++++
@@ -478,67 +558,61 @@ void swarm_follow_wp(void)
   */
   for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
   {
-    Point Dir_Ray = DIRECTION_RAYS[idx];
-
     //GOAL MAP
     for(uint8_t wp_id = FIRST_GOAL_POINT_ID; wp_id < LAST_GOAL_POINT_ID; ++wp_id)
     {
-      set_points(&goal,waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT);
-      Point Dist = sub_points(&goal,&pos);
-      if(cosine_sim(&Dir_Ray, &Dist) >= SECTOR_COS_SIM) 
+      set_points(&goal,waypoint_get_x(wp_id),waypoint_get_y(wp_id));
+      dist = sub_points(&goal,&pos);
+      if(cosine_sim((DIRECTION_RAYS+idx), &dist) >= SECTOR_COS_SIM) 
       {
-        Point current_max = max_intrest_forces[idx];
-        Point att_force = linear_Attraction(&pos,&goal,GOAL_LIMIT,GOAL_SIGMA,GOAL_GAMMA);
-        max_intrest_forces[idx] = strongest_force(&current_max,&att_force);
+        att_force = linear_Attraction(&pos,&goal,GOAL_MAX);
+        max_interest_forces[idx] = strongest_force((max_interest_forces+idx),&att_force);
       }
     }
 
     //DRONE MAPS & MASK
     for(uint8_t ac_id = FIRST_SWARM_MEMBER_ID; ac_id <= LAST_SWARM_MEMBER_ID; ++ac_id)
     {
+      int index = ac_id-FIRST_SWARM_MEMBER_ID;
       if(ac_id != AC_ID && getPositionEnu_f(ac_id) != NULL) 
       {
-        set_points(&other_pos,getPositionEnu_f(ac_id)->x,getPositionEnu_f(ac_id)->y,getPositionEnu_f(ac_id)->z);
-        Point Dist = sub_points(&other_pos,&pos);
-        Point Rotated = rotate2D(&Dist,Pi); 
-        if(cosine_sim(&Dir_Ray, &Dist) >= SECTOR_COS_SIM) 
+        set_points(&other_pos,getPositionEnu_f(ac_id)->x,getPositionEnu_f(ac_id)->y);
+        set_points((other_acs+index),other_pos.x,other_pos.y);
+        dist = sub_points(&other_pos,&pos);
+        //rotated = rotate2D(&dist,M_PI); 
+        if(cosine_sim((DIRECTION_RAYS+idx), &dist) >= SECTOR_COS_SIM) 
         {
           member_dist = dist_points(&other_pos,&pos);
           if(member_dist<=DRONE_TO_CLOSE) mask[idx] = false;
           else if (member_dist<=SWARM_DIST) 
           {
-            set_points(&other_vel,acInfoGetVelocityEnu_f(ac_id)->x,acInfoGetVelocityEnu_f(ac_id)->y,acInfoGetVelocityEnu_f(ac_id)->z);
+            set_points(&other_vel,acInfoGetVelocityEnu_f(ac_id)->x,acInfoGetVelocityEnu_f(ac_id)->y);
             alignment_force = add_points(&alignment_force,&other_vel);
             alignment_counter+=1.0f;
           }
-          Point current_max = max_member_atts[idx];
-          Point att_force = log_Attraction(&pos,&other_pos,DRONE_ATT_LIMIT,DRONE_ATT_CUT_OFF);
-          max_member_atts[idx] = strongest_force(&current_max,&att_force);
-        }
-        else if(cosine_sim(&Dir_Ray, &Rotated) >= SECTOR_COS_SIM)
-        {
-          Point current_max = max_member_reps[idx];
-          Point rep_force = linear_Repulsion(&pos,&other_pos,DRONE_REP_LIMIT,DRONE_REP_SIGMA,DRONE_REP_GAMMA,DRONE_REP_ALPHA);
-          max_member_reps[idx] = strongest_force(&current_max, &rep_force); 
+          att_force = log_Attraction(&pos,&other_pos,DRONE_ATT_CUT_OFF);
+          max_member_atts[idx] = strongest_force((max_member_atts+idx),&att_force);
+          
+          rep_force = linear_Repulsion(&pos,&other_pos,DRONE_REP_MAX);
+          max_member_reps[idx] = strongest_force((max_member_reps+idx), &rep_force); 
         }
       }
+      else set_points((other_acs+index),stateGetPositionEnu_f()->x,stateGetPositionEnu_f()->y);
     }
 
     //DANGER MAP & MASK
     for(uint8_t wp_id = FIRST_DANGER_POINT_ID; wp_id < LAST_DANGER_POINT_ID; ++wp_id)
     {
-      set_points (&danger,waypoint_get_x(wp_id),waypoint_get_y(wp_id),FLIGHT_HEIGHT);
-      Point Dist = sub_points(&danger,&pos);
-      Point Rotated = rotate2D(&Dist,Pi);
-      if(cosine_sim(&Dir_Ray, &Rotated) >= SECTOR_COS_SIM)
+      set_points (&danger,waypoint_get_x(wp_id),waypoint_get_y(wp_id));
+      dist = sub_points(&danger,&pos);
+      //rotated = rotate2D(&dist,M_PI);
+      if(cosine_sim((DIRECTION_RAYS+idx), &dist) >= SECTOR_COS_SIM) 
       {
-        Point current_max = max_danger_forces[idx];
-        Point rep_force = limExp_Repulsion(&pos,&danger,DANGER_LIMIT,DANGER_CUT_OFF,DANGER_SIGMA,DANGER_GAMMA,DANGER_ALPHA);
-        max_danger_forces[idx] = strongest_force(&current_max,&rep_force);
+        if(dist_points(&danger,&pos)<=DANGER_TO_CLOSE) mask[idx] = false;
+        
+        rep_force = limExp_Repulsion(&pos,&danger,DANGER_CUT_OFF,DANGER_MAX);
+        max_danger_forces[idx] = strongest_force((max_danger_forces+idx),&rep_force);
       }
-      else if((cosine_sim(&Dir_Ray, &Dist) >= SECTOR_COS_SIM) && 
-              (dist_points(&danger,&pos)<=DANGER_TO_CLOSE)) 
-        mask[idx] = false; 
     }
   }
 
@@ -551,100 +625,99 @@ void swarm_follow_wp(void)
    evaluate context steering behavior
   */
 
-  //calculate total forces with respect to context map weightings and swarm alignment
-  alignment_force = scale_down_points(&alignment_force,alignment_counter);
+  // calculate scores with respect to context map weightings and swarm alignment
+  if(alignment_counter>0.0f) alignment_force = scale_down_points(&alignment_force,alignment_counter);
   for(int idx=0; idx<NUM_DIRECTION_RAYS; ++idx)
   {
-    Point place_holder;
-    Point current_force = total_forces[idx];
-    Point max_intrest = max_intrest_forces[idx];
-    Point max_danger = max_danger_forces[idx];
-    Point max_att = max_member_atts[idx];
-    Point max_rep = max_member_reps[idx];
-    Point Dir_Ray = DIRECTION_RAYS[idx];
-    
-    place_holder = scale_up_points(&max_intrest,GOAL_MULT);
-    current_force = add_points(&current_force,&place_holder);
-    place_holder = scale_up_points(&max_att,DRONE_ATT_MULT);
-    current_force = add_points(&current_force,&place_holder);
-    place_holder = scale_up_points(&max_rep,DRONE_REP_MULT);
-    current_force = add_points(&current_force,&place_holder);
-    place_holder = scale_up_points(&max_danger,DANGER_MULT);
-    current_force = add_points(&current_force,&place_holder);
-    
+    score[idx] = 0.000f;
+    score[idx] = mag((max_interest_forces+idx))*GOAL_MULT;
+    score[idx] = score[idx]+mag((max_member_atts+idx))*DRONE_ATT_MULT;
+    score[idx] = score[idx]-mag((max_member_reps+idx))*DRONE_REP_MULT;
+    score[idx] = score[idx]-mag((max_danger_forces+idx))*DANGER_MULT;
 
-    /* ----------------------------------------------------------------------
-     * Danger Mask already exist and probably not applicable in current setup
-     * ----------------------------------------------------------------------
-     * //danger based mask
-     * if(cosine_sim(&DIRECTION_RAYS[idx],&total_forces[idx]) < 0.0) mask[idx]=false;
-     */
-    
-    //more likely to perform alignment otherwise less likely to switch directions
-    alignSim = cosine_sim(&Dir_Ray,&alignment_force);
-    constrainSim = fmaxf(SECTOR_COS_SIM,cosine_sim(&alignment_force,&vel));
-    if(alignSim < constrainSim) total_forces[idx] = scale_up_points(&current_force,alignSim*((0.25-1.0)/(-1.0-constrainSim)));
-    else total_forces[idx] = init_point(current_force.x,current_force.y,current_force.z);
+    // more likely to perform alignment otherwise less likely to switch directions
+    alignSim = cosine_sim((DIRECTION_RAYS+idx),&alignment_force);
+    velSim = cosine_sim((DIRECTION_RAYS+idx),&vel);
+    alignmentMap[idx] = alignSim * (mag(&alignment_force)/MAX_SPEED) * ALIGN_MULT;
+    selfAlignmentMap[idx] = velSim * (mag(&vel)/MAX_SPEED) * SELF_ALIGN_MULT;
+    if(mag(&alignment_force)>0.01f) score[idx] = score[idx] + alignmentMap[idx];
+    if(mag(&vel)>0.01f) score[idx] = score[idx] + selfAlignmentMap[idx];
   }
+
 
   //select strongest force as main force direction
   while((maxIdx < NUM_DIRECTION_RAYS) && !mask[maxIdx]) maxIdx+=1;
   for(int idx=maxIdx+1; idx<NUM_DIRECTION_RAYS; ++idx) 
-  {
-    Point current_force = total_forces[idx];
-    Point max_force = total_forces[maxIdx];
-    if(mask[idx] && (mag(&current_force) > mag(&max_force))) maxIdx = idx;
-  }
+    if(mask[idx] && (score[idx] > score[maxIdx])) maxIdx = idx;
+
   if(maxIdx < NUM_DIRECTION_RAYS)
   {
-    Point Dir_Ray = DIRECTION_RAYS[maxIdx];
-    Point max_force = total_forces[maxIdx];
-    resulting_force = scale_up_points(&Dir_Ray,MAX_SPEED);
-
-    //interpolate between main and strongest neighboring force
-    magnitude = mag(&max_force);
-    if(magnitude>1.0f) 
+    if(fabsf(score[maxIdx])>0.002f)
     {
+      //interpolate between main and strongest neighboring force
       leftIdx = (maxIdx-1 + NUM_DIRECTION_RAYS)%NUM_DIRECTION_RAYS;
       rightIdx = (maxIdx+1 + NUM_DIRECTION_RAYS)%NUM_DIRECTION_RAYS;
-      Point left_force = total_forces[leftIdx];
-      Point right_force = total_forces[rightIdx];
-      leftMag = mag(&left_force); 
-      rightMag = mag(&right_force);
-      neighborIdx = (leftMag<rightMag && mask[rightIdx])? rightIdx: (mask[leftIdx])? leftIdx: -1;
+      neighborIdx = -1;
+      if(score[leftIdx]<score[rightIdx])
+      {
+        if(mask[rightIdx]) neighborIdx = rightIdx;
+        else if(mask[leftIdx]) neighborIdx = leftIdx;
+      }
+      else
+      {
+        if(mask[leftIdx]) neighborIdx = leftIdx;
+        else if(mask[rightIdx]) neighborIdx = rightIdx;
+      }
       if(neighborIdx>=0)
       {
-        Point neighbor_force = total_forces[neighborIdx];
-        Point neighbor_dir = DIRECTION_RAYS[neighborIdx];
-        Point place_holder = scale_up_points(&neighbor_dir,MAX_SPEED*magnitude);
-        magnitude = mag(&neighbor_force)/magnitude;
-        resulting_force = add_points(&resulting_force,&place_holder);
+        magnitude = score[maxIdx]/(score[maxIdx]+score[neighborIdx]);
+        resulting_force = scale_up_points((DIRECTION_RAYS+maxIdx),magnitude);
+        scaled_force = scale_up_points((DIRECTION_RAYS+neighborIdx),(1.0f-magnitude));
+        resulting_force = add_points(&resulting_force,&scaled_force);
       }
     }
-    else if(magnitude<0.1f) scale_up_points(&vel,0.0f);
+    else resulting_force = scale_up_points((DIRECTION_RAYS+maxIdx),1.0f);
   } 
   else scale_up_points(&vel,0.0f);
 
-  //set drone attributes accelleration, velocity, position
-  acc = scale_up_points(&resulting_force,(MAX_SPEED/mag(&resulting_force)));
+  if(fabsf(score[maxIdx])<0.0001f)
+  {
+    scale_up_points(&vel,0.0f);
+    scale_up_points(&acc,0.0f);
+  }  
+  else
+  {
+    //set drone attributes accelleration, velocity, position
+    acc = scale_up_points(&resulting_force,(MAX_SPEED/mag(&resulting_force)));
+  }
 
-  struct EnuCoor_f* velocity = acInfoGetVelocityEnu_f(AC_ID);
-  velocity->x = MAX_SPEED * tanhf(velocity->x+acc.x);
-  velocity->y = MAX_SPEED * tanhf(velocity->y+acc.y);
+  struct EnuCoor_f* velocity = stateGetSpeedEnu_f();
+  velocity->x = MAX_SPEED * tanhf(vel.x/MAX_SPEED+acc.x/MAX_SPEED);
+  velocity->y = MAX_SPEED * tanhf(vel.y/MAX_SPEED+acc.y/MAX_SPEED);
   acInfoSetVelocityEnu_f(AC_ID,velocity);
 
   struct EnuCoor_i future_pos = *stateGetPositionEnu_i();
-  future_pos.x += POS_BFP_OF_REAL(velocity->x)+POS_BFP_OF_REAL(FOLLOW_OFFSET_X);
-  future_pos.y += POS_BFP_OF_REAL(velocity->y)+POS_BFP_OF_REAL(FOLLOW_OFFSET_Y);
+  future_pos.x += POS_BFP_OF_REAL(velocity->x);
+  future_pos.y += POS_BFP_OF_REAL(velocity->y);
   future_pos.z = POS_BFP_OF_REAL(FLIGHT_HEIGHT);
 
   // Move the waypoints
+  current_pos = *stateGetPositionLla_f();
   waypoint_set_enu_i(SWARM_WAYPOINT_ID, &future_pos);
   for(uint8_t wp_id = FIRST_GOAL_POINT_ID; wp_id < LAST_GOAL_POINT_ID; ++wp_id)
   {
     struct LlaCoor_i* way_point = waypoint_get_lla(wp_id);
     att_point = toFloatPointFormat(way_point);
-    current_pos = *stateGetPositionLla_f();
     updateSyncLinkMsg(&current_pos, wp_id);
   }
+  
+  if(tick==0) 
+  {
+    tick = 3;
+    write_to_log_file();
+    write_to_debug_file(max_interest_forces, max_danger_forces, max_member_atts, max_member_reps, score, 
+                        alignmentMap, selfAlignmentMap, mask, alignment_force, maxIdx, neighborIdx);
+    write_to_swarm_info_debug_file(other_acs,AC_AMOUNT);
+  }
+  else --tick;
 }

@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
 #module imports
-import sys,time,math
+import sys, time, math
+from typing import List, Tuple
 from threading import Thread, Lock
-from queue import Queue,Empty
+from queue import Queue, Empty
 from os import path,getenv
 
 #add PPRZ_HOME var to Path
@@ -49,12 +50,18 @@ class ThreadSafe_Logger:
     __finished:bool = False
 
     def __write_to_file(self):
+        while not self.__FILE_WRITER: time.sleep(1)
+        counter = 0
         while not self.__finished or not self.__QUEUE.empty():
-            try: data = self.__QUEUE.get(timeout=0.2)
-            except Empty: time.sleep(1)
+            try: data = self.__QUEUE.get(timeout=0.1)
+            except Empty: time.sleep(0.5)
             else: 
                 self.__FILE_WRITER.write(data)
                 self.__QUEUE.task_done()
+                if counter==10: 
+                    self.__FILE_WRITER.flush()
+                    counter = 0
+                else: counter+=1
 
     def __init__(self, filename):
         self.__FILENAME = filename
@@ -75,6 +82,7 @@ class ThreadSafe_Logger:
     
     def __del__(self):
         self.close()
+        del self
 
 
 
@@ -94,7 +102,7 @@ def getDistance(own_pos:Point, goal_pos:Point)->float:
 
 
 #converts a LLA-Point from float radial representation to a int degree representation
-def convertToInt(point:Point)->"tuple[int]":
+def convertToInt(point:Point)->Tuple[int]:
     lat = int((point["lat"]*180/math.pi)*1e7)
     lon = int((point["lon"]*180/math.pi)*1e7)
     alt = int(point["alt"])
@@ -102,7 +110,7 @@ def convertToInt(point:Point)->"tuple[int]":
 
 
 #converts a LLA-Point from float radial representation to float degree representation
-def convertToDegree(point:Point)->"tuple[float]":
+def convertToDegree(point:Point)->Tuple[float]:
     lat = float(point["lat"]*180/math.pi)
     lon = float(point["lon"]*180/math.pi)
     alt = float(point["alt"])
@@ -110,7 +118,7 @@ def convertToDegree(point:Point)->"tuple[float]":
 
 
 #create PprzMessage            
-def createMSG(wp_id:int,ac_id:int,point:Point)->"PprzMessage":
+def createMSG(wp_id:int,ac_id:int,point:Point)->PprzMessage:
     msg = PprzMessage("ground", "MOVE_WAYPOINT")
     msg['wp_id'] = wp_id
     msg['ac_id'] = str(ac_id)
@@ -120,7 +128,7 @@ def createMSG(wp_id:int,ac_id:int,point:Point)->"PprzMessage":
 
 #Input Function
 #scan file to create flight plan
-def get_szenario(filename)->"tuple[list[Point]]":
+def get_szenario(filename)->Tuple[List[Point]]:
     att_points,rep_points,spawn_points = ([],[],[])
     atts, reps = (0,0)
     file = open((DIR+"/"+filename),"r")
@@ -153,8 +161,8 @@ class WPMover:
     __MSG_SENDING_THREAD:Thread = None
     __MSG_UPDATE_THREAD:Thread = None
     __MSG_ACCESS:Lock = Lock()
-    __MSG_QUEUE:"Queue[tuple[Point,int]]" = Queue()
-    __moveWP:"list[PprzMessage]" = []
+    __MSG_QUEUE:"Queue[Tuple[Point,int]]" = Queue()
+    __moveWP:List[PprzMessage] = []
     __terminate:bool = False
     __down:bool = False
     __epoche:int = 0
@@ -162,18 +170,19 @@ class WPMover:
 
 
     #init the WP-Mover tool
-    def __init__(self,fname:str,start_id:int,end_id:int,first_att_id:int,att_ids:"list[int]",rep_ids:"list[int]",atts:"list[Point]",reps:"list[Point]",spawns:"list[Point]",update_type:str,Debug:bool=False):
+    def __init__(self,fname:str,start_id:int,end_id:int,first_att_id:int,att_ids:List[int],rep_ids:List[int],atts:List[Point],reps:List[Point],spawns:List[Point],update_type:str,Debug:bool=False):
         self.__LOG:str = fname
+        self.__LOGGER = ThreadSafe_Logger(self.__LOG)
         self.__DEBUG:bool = Debug
         self.__UPDATE:str = update_type
         self.__FIRST_ATT_ID:int = first_att_id
-        self.__ATT_IDS:"list[int]" = att_ids
-        self.__REP_IDS:"list[int]" = rep_ids
+        self.__ATT_IDS:List[int] = att_ids
+        self.__REP_IDS:List[int] = rep_ids
         self.__END_ID:int = end_id      #end_id is exclusiv 40 means last copter in the swarm has id 39
         self.__START_ID:int = start_id  #start_id is inclusiv 30 means last copter in the swarm has id 30
-        self.__ATT_POINTS:"list[Point]" = atts
-        self.__REP_POINTS:"list[Point]" = reps
-        self.__SPAWN_POINTS:"list[Point]" = spawns
+        self.__ATT_POINTS:List[Point] = atts
+        self.__REP_POINTS:List[Point] = reps
+        self.__SPAWN_POINTS:List[Point] = spawns
         self.__INTERFACE = IvyMessagesInterface(
                                agent_name="Pprzlink_Move_WP",      # Ivy agent name
                                start_ivy=False,                    # Do not start the ivy bus now
@@ -191,24 +200,24 @@ class WPMover:
             self.__MSG_SENDING_THREAD.join()
             self.__MSG_QUEUE.join()
             self.__MSG_UPDATE_THREAD.join()
-            time.sleep(3)
             self.__LOGGER.close()
             self.__INTERFACE.shutdown()
             self.__down = True
     
     #delete object
-    def __del__(self): self.shutdown()
+    def __del__(self): 
+        self.shutdown()
+        del self
 
     
     #main method - executes the program
     def run(self):
-        self.__LOGGER = ThreadSafe_Logger(self.__LOG)
 
         #send update msgs through interface
         def send_msgs():
             self.__LOGGER.write("MSG-Thread started ... \n")
             while not self.__terminate:
-                aquired = self.__MSG_ACCESS.acquire(timeout=0.5)
+                aquired = self.__MSG_ACCESS.acquire(timeout=0.75)
                 if aquired:
                     if self.__DEBUG: self.__LOGGER.write("len(moveWP) = %d\n" % len(self.__moveWP))
                     string = ""
@@ -219,7 +228,7 @@ class WPMover:
                         string += ("%2d. %3s-WP_Move-MSG: %s\n" % (i, pre, msg))
                     if self.__DEBUG: self.__LOGGER.write(string)
                     self.__MSG_ACCESS.release()
-                    time.sleep(5)
+                    time.sleep(3)
             self.__LOGGER.write("... MSG-Thread closed! \n")
 
         #recv updates from drones
@@ -227,7 +236,7 @@ class WPMover:
             if(int(recvMsg["achieved"])>0):
                 own_pos = Point(float(recvMsg["lat"]),float(recvMsg["lon"]),float(recvMsg["alt"]))
                 att_id = int(recvMsg["wp_id"])
-                data:"tuple[Point,int,int,PprzMessage]" = (own_pos,att_id,ac_id,recvMsg)
+                data:Tuple[Point,int,int,PprzMessage] = (own_pos,att_id,ac_id,recvMsg)
                 self.__MSG_QUEUE.put(data)
             if self.__DEBUG: 
                 self.__LOGGER.write("%d. Goal_Achieved-MSG: %s\n" % (self.__counter, recvMsg))
@@ -236,11 +245,11 @@ class WPMover:
         #manipulate goal points via msg updates
         def update_waypoint():
             while not self.__terminate or not self.__MSG_QUEUE.empty():
-                try: data = self.__MSG_QUEUE.get(timeout=0.2)
-                except Empty: time.sleep(1)
+                try: data = self.__MSG_QUEUE.get(timeout=0.1)
+                except Empty: time.sleep(0.5)
                 else: 
                     own_pos,att_id,ac_id,recvMsg = data
-                    if(getDistance(own_pos,self.__ATT_POINTS[((att_id-2)+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)])<=150): #16.25
+                    if(getDistance(own_pos,self.__ATT_POINTS[((att_id-2)+len(self.__ATT_IDS)*self.__epoche)%len(self.__ATT_POINTS)])<=16.25):
                         with self.__MSG_ACCESS:
                             self.__epoche += 1
                             self.__moveWP = []
@@ -290,7 +299,9 @@ class WPMover:
             while not self.__terminate: time.sleep(15)
             raise KeyboardInterrupt 
         except: self.__LOGGER.write("... !STOPPING FlightPlan! ...\n")
-        finally: raise KeyboardInterrupt
+        finally:
+            self.shutdown() 
+            raise KeyboardInterrupt
 
         
 
@@ -304,7 +315,7 @@ if __name__=='__main__':
         LOG_NAME:str = DIR+"/WP_Mover.log" #log-file name
 
         #scan in needed constants from command line arguments and the file 
-        FILE_NAME:str = sys.argv[3].strip("/")
+        FILE_NAME:str = sys.argv[3]
         LAST_SWARM_AC_ID :int = int(sys.argv[2]) #id is exclusiv 40 means last copter in the swarm has id 39
         FIRST_SWARM_AC_ID:int = int(sys.argv[1]) #id is inclusiv 30 means first copter in the swarm has id 30
         ATT_POINTS, REP_POINTS, SPAWN_POINTS, ATT_RANGE, REP_RANGE, UPDATE = get_szenario(FILE_NAME)
